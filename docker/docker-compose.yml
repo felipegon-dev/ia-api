@@ -1,34 +1,15 @@
 services:
   ia-api:
+    container_name: ia-api
     build:
-      context: ../app
-      dockerfile: ../docker/dev.Dockerfile
+      context: ../../ia-api/docker
+      dockerfile: dev.Dockerfile
+    restart: always
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
-      PORT: 3000
+      PORT: 3001
     volumes:
-      - ../app:/usr/src/app
-    depends_on:
-      - redis
+      - ../../ia-api/app:/usr/src/app
     networks:
       - ia-manager
-
-  # only for caching API responses. maybe sessions?
-  redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - ia-manager
-
-
-volumes:
-  redis_data:
-
-networks:
-  ia-manager:
-    external: true
