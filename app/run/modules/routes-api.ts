@@ -1,5 +1,6 @@
 import { Express, Request, Response } from 'express';
 import { UserController } from '@api/v1/controllers/UserController';
+import { TokenController } from '@api/v1/controllers/TokenController';
 import v1ApiRoutes from '@config/routes/v1.api.routes';
 
 /**
@@ -7,11 +8,12 @@ import v1ApiRoutes from '@config/routes/v1.api.routes';
  */
 export function initRoutesApi(app: Express) {
     const userController = new UserController();
+    const tokenController = new TokenController();
 
     // Mapeo backend: vinculamos name → handler
     const controllerMapping: Record<string, any> = {
         getUserById: userController.getUserById.bind(userController),
-        // Agrega más mappings según v1ApiRoutes
+        getToken: tokenController.getToken.bind(tokenController),
     };
 
     // Registramos las rutas dinámicamente según v1ApiRoutes
