@@ -1,33 +1,38 @@
 import { Express, Request, Response } from 'express';
-import { UserController } from '@api/v1/controllers/UserController';
-import { TokenController } from '@api/v1/controllers/TokenController';
-import v1ApiRoutes from '@config/routes/v1.api.routes';
+import v1ApiRoutes, { container } from '@config/v1.api.routes';
+import { catchAsync } from './error-handler';
+import {NotFoundError} from "@errors/NotFoundError";
 
-/**
- * API routes with Controllers
- */
 export function initRoutesApi(app: Express) {
-    const userController = new UserController();
-    const tokenController = new TokenController();
-
-    // Mapeo backend: vinculamos name → handler
-    const controllerMapping: Record<string, any> = {
-        getUserById: userController.getUserById.bind(userController),
-        getToken: tokenController.getToken.bind(tokenController),
-    };
-
-    // Registramos las rutas dinámicamente según v1ApiRoutes
     v1ApiRoutes.forEach(route => {
-        const handler = controllerMapping[route.name];
-        if (!handler) {
-            throw new Error(`no error handler for: ${route.name}`);
+        const {
+            controller: ControllerClass,
+            method,
+            path,
+            httpMethod = 'get',
+            requires = [],
+        } = route;
+
+        // Dependencias
+        const deps = requires.map(Dep => container.get(Dep));
+        const controllerInstance = new ControllerClass(...deps);
+
+        const rawHandler = controllerInstance[method]?.bind(controllerInstance);
+
+        if (!rawHandler) {
+            // ❗ Error de configuración → debe explotar al arrancar
+            throw new NotFoundError(
+                `No handler "${method}" in controller ${ControllerClass.name}`
+            );
         }
 
-        // Ruta pública, sin middleware auth
-        app.get(route.path, handler);
+        // 🔥 ENVOLTURA GLOBAL
+        const handler = catchAsync(rawHandler);
+
+        app[httpMethod](path, handler);
     });
 
-    // 404 específico para rutas /api no encontradas
+    // 404 API
     app.use((req: Request, res: Response) => {
         res.status(404).json({
             success: false,

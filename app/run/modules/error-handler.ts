@@ -1,18 +1,36 @@
-// error-handler.ts
 import { Request, Response, NextFunction } from 'express';
+import { AppError } from '@errors/AppError';
 
-/**
- * Middleware de manejo de errores
- */
-export function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+export const catchAsync =
+    (fn: Function) =>
+        (req: Request, res: Response, next: NextFunction) =>
+            Promise.resolve(fn(req, res, next)).catch(next);
+
+export function errorHandler(
+    err: any,
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
     const isDev = process.env.NODE_ENV !== 'production';
 
-    res.locals.message = err.message;
-    res.locals.error = isDev ? err : {};
+    // Errores controlados (nuestros)
+    if (err instanceof AppError) {
+        return res.status(err.status).json({
+            success: false,
+            message: err.message,
+            code: err.code,
+            ...(isDev && { stack: err.stack }),
+            ...(err instanceof Error && 'details' in err
+                ? { details: (err as any).details }
+                : {}),
+        });
+    }
 
-    res.status(err.status || 500).json({
+    return res.status(500).json({
         success: false,
-        message: err.message,
-        ...(isDev && { stack: err.stack }),
+        message: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        ...(isDev && { stack: err?.stack }),
     });
 }

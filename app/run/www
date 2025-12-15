@@ -10,9 +10,10 @@ require('tsconfig-paths/register');
 const app = require('./app').default || require('./app');
 const debug = require('debug')('ia-checkout:server');
 const http = require('http');
+const {NotFoundError} = require("../src/errors/NotFoundError");
 
 if (!process.env.PORT) {
-    throw new Error('PORT environment variable is required');
+    throw new NotFoundError('PORT environment variable is required');
 }
 const port = normalizePort(process.env.PORT);
 app.set('port', port);

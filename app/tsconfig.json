@@ -12,7 +12,8 @@
     "paths": {
       "@api/*": ["src/api/*"],
       "@services/*": ["src/services/*"],
-      "@config/*": ["config/*"]
+      "@config/*": ["config/*"],
+      "@errors/*": ["src/errors/*"]
     },
     "outDir": "dist"
   },
