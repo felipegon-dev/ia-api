@@ -2,6 +2,8 @@ import Token from "@services/base/Token";
 import {UserService} from "@services/UserService";
 import {ValidationError} from "@errors/ValidationError";
 import UserData from "@services/base/UserData";
+import UserRepository from "@domain/repository/UserRepository";
+import UserValidation from "@domain/services/UserValidation";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -19,8 +21,10 @@ export class Container {
     private register(): void {
         // Base services
         this.instances.set(UserData, new UserData());
+        this.instances.set(UserRepository, new UserRepository())
         this.instances.set(Token, new Token(this.get(UserData)));
         this.instances.set(UserService, new UserService());
+        this.instances.set(UserValidation, new UserValidation(this.get(UserRepository), this.get(UserData)))
     }
 
     public get<T>(Service: Constructor<T>): T {

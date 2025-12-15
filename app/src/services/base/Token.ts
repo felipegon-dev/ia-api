@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'crypto';
 import { UnauthorizedError } from "@errors/UnauthorizedError";
 import { HEADERS } from "@config/headers";
-import UserData from "@services/base/UserData";
+import UserData, {UserDataPayload} from "@services/base/UserData";
 // @ts-ignore
 import type { TokenPayload } from '@services/base/TokenPayload'
 
@@ -40,7 +40,7 @@ class Token {
         const tokenPayload = decoded as TokenPayload;
 
         // 4️⃣ Obtener datos actuales de la request
-        const currentUserData = this.userData.get(req, {} as Response);
+        const currentUserData = this.userData.set(req).get();
 
         // 5️⃣ Comparar fingerprint
         if (!this.matchFingerprint(tokenPayload.fp, currentUserData)) {
@@ -54,16 +54,15 @@ class Token {
      * Genera un token nuevo usando los datos de la request
      */
     public get(req: Request, res: Response): string {
-        // todo validate source
-        const tokenPayload = this.getTokenPayload(req, res);
+        const tokenPayload = this.getTokenPayload(req);
         return this.generateToken(tokenPayload);
     }
 
     /**
      * Obtiene TokenPayload actual a partir de la request
      */
-    public getTokenPayload(req: Request, res: Response): TokenPayload {
-        const user = this.userData.get(req, res);
+    public getTokenPayload(req: Request): TokenPayload {
+        const user = this.userData.set(req).get();
 
         return {
             userId: user.userId,
@@ -88,6 +87,7 @@ class Token {
         if (!ivB64 || !authTagB64 || !encrypted) throw new UnauthorizedError('Invalid token format');
 
         const decipher = crypto.createDecipheriv(this.algorithm, this.getEncryptionKey(), Buffer.from(ivB64, 'base64'));
+        // @ts-ignore
         decipher.setAuthTag(Buffer.from(authTagB64, 'base64'));
 
         return decipher.update(encrypted, 'base64', 'utf8') + decipher.final('utf8');
@@ -101,28 +101,44 @@ class Token {
         }
     }
 
-    private matchFingerprint(tokenFp: TokenPayload['fp'], reqData: ReturnType<UserData['get']>): boolean {
-        // User-Agent del servidor
+    private matchFingerprint(
+        tokenFp: TokenPayload['fp'],
+        reqData: UserDataPayload
+    ): boolean {
+        const requiredFields: (keyof TokenPayload['fp'])[] = [
+            'srvUserAgent',
+            'forwardedFor',
+            'realIp',
+            'platform',
+            'timezone',
+            'srvHost',
+            'host',
+            'srvReferer'
+        ];
+
+        for (const field of requiredFields) {
+            const tokenValue = tokenFp[field as keyof TokenPayload['fp']];
+            const reqValue = reqData[field as keyof typeof reqData];
+
+            if (tokenValue == null || reqValue == null) { // null o undefined
+                return false;
+            }
+        }
+
+        // Comparación de campos
         if (tokenFp.srvUserAgent !== reqData.srvUserAgent) return false;
-
-        // IPs: verificamos forwardedFor y realIp por separado
-        if (tokenFp.forwardedFor && tokenFp.forwardedFor !== reqData.forwardedFor) return false;
-        if (tokenFp.realIp && tokenFp.realIp !== reqData.realIp) return false;
-
-        // Campos opcionales
+        if (tokenFp.forwardedFor !== reqData.forwardedFor) return false;
+        if (tokenFp.realIp !== reqData.realIp) return false;
         if (tokenFp.platform !== reqData.platform) return false;
-        if (tokenFp.timezone && tokenFp.timezone !== reqData.timezone) return false;
-
-        // Hosts: srvHost y host por separado
-        if (tokenFp.srvHost && tokenFp.srvHost !== reqData.srvHost) return false;
-        if (tokenFp.host && tokenFp.host !== reqData.host) return false;
-
-        // Verificar que srvReferer y host sean iguales si existen
-        if (tokenFp.srvReferer && reqData.srvReferer && tokenFp.srvReferer !== reqData.srvReferer) return false;
-        if (tokenFp.host && reqData.host && tokenFp.host !== reqData.host) return false;
+        if (tokenFp.timezone !== reqData.timezone) return false;
+        if (tokenFp.srvHost !== reqData.srvHost) return false;
+        if (tokenFp.host !== reqData.host) return false;
+        if (tokenFp.srvReferer !== reqData.srvReferer) return false;
 
         return true;
     }
+
+
 
 
     private generateToken(data: object): string {
@@ -137,6 +153,7 @@ class Token {
         let encrypted = cipher.update(jwtToken, 'utf8', 'base64');
         encrypted += cipher.final('base64');
 
+        // @ts-ignore
         const authTag = cipher.getAuthTag().toString('base64');
         return `${iv.toString('base64')}.${authTag}.${encrypted}`;
     }

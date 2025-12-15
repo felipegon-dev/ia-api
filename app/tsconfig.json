@@ -13,7 +13,8 @@
       "@api/*": ["src/api/*"],
       "@services/*": ["src/services/*"],
       "@config/*": ["config/*"],
-      "@errors/*": ["src/errors/*"]
+      "@errors/*": ["src/errors/*"],
+      "@domain/*": ["src/domain/*"]
     },
     "outDir": "dist"
   },

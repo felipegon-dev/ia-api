@@ -18,6 +18,20 @@ module.exports = {
         allowNull: false,
         unique: true
       },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      code: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      status: {
+        type: Sequelize.ENUM('active', 'inactive', 'banned'),
+        allowNull: false,
+        defaultValue: 'active'
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -32,6 +46,11 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    // primero eliminar el enum para evitar errores en postgres
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_users_status";');
+    }
+
     await queryInterface.dropTable('users');
   }
 };

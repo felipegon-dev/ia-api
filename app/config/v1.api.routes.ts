@@ -3,7 +3,7 @@ import { SpaTokenController } from '@api/v1/controllers/SpaTokenController';
 import { Container } from '@config/Container';
 import {UserService} from "@services/UserService";
 import Token from "@services/base/Token";
-import UserData from "@services/base/UserData";
+import UserValidation from "@domain/services/UserValidation";
 
 const container = new Container();
 
@@ -26,7 +26,7 @@ const v1ApiRoutes: RouteConfig[] = [
         controller: SpaTokenController,
         method: 'getToken',
         path: '/api/v1/token',
-        requires: [Token, UserData],
+        requires: [Token, UserValidation],
     }
 ];
 

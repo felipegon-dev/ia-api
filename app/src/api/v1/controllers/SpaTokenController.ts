@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
 import Token from '@services/base/Token';
-import UserData from "@services/base/UserData";
-
+import UserValidation from "@domain/services/UserValidation";
 /**
  * Access without authentication to get a token for SPA apps
  */
 
 export class SpaTokenController {
-    constructor(private token: Token, private userData: UserData) {}
+    constructor(private token: Token, private userValidation: UserValidation) {}
 
     /**
      * Access without authentication to get a token for SPA apps
@@ -15,11 +14,7 @@ export class SpaTokenController {
      * @param res
      */
     getToken = async (req: Request, res: Response) => {
-        try {
-            const token = this.token.get(req, res);
-            res.status(200).json({ success: true, data: token });
-        } catch (error: any) {
-            res.status(500).json({ success: false, message: error.message });
-        }
+        this.userValidation.validate(req);
+        res.status(200).json({ success: true, data: this.token.get(req, res)});
     };
 }
