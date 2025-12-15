@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'crypto';
-import { UnauthorizedError } from "@errors/UnauthorizedError";
+import { UnauthorizedError } from "@application/errors/UnauthorizedError";
 import { HEADERS } from "@config/headers";
-import UserData, {UserDataPayload} from "@services/base/UserData";
+import UserData, {UserDataPayload} from "@application/services/base/UserData";
 // @ts-ignore
-import type { TokenPayload } from '@services/base/TokenPayload'
+import type { TokenPayload } from '@application/services/base/TokenPayload'
 
 /**
  * todo: nueva idea:

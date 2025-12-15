@@ -10,11 +10,10 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@api/*": ["src/api/*"],
-      "@services/*": ["src/services/*"],
+      "@application/*": ["src/application/*"],
       "@config/*": ["config/*"],
-      "@errors/*": ["src/errors/*"],
-      "@domain/*": ["src/domain/*"]
+      "@domain/*": ["src/domain/*"],
+      "@infrastructure/*": ["src/infrastructure/*"]
     },
     "outDir": "dist"
   },

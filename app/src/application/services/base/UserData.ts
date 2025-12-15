@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { HEADERS } from "@config/headers";
 import { decompressFromEncodedURIComponent } from "lz-string";
-import { ValidationError } from "@errors/ValidationError";
+import { ValidationError } from "@application/errors/ValidationError";
 
 export interface UserDataPayload {
     userId?: string;

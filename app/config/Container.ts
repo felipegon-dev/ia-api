@@ -1,9 +1,9 @@
-import Token from "@services/base/Token";
-import {UserService} from "@services/UserService";
-import {ValidationError} from "@errors/ValidationError";
-import UserData from "@services/base/UserData";
+import Token from "@application/services/base/Token";
+import {UserService} from "@application/services/UserService";
+import {ValidationError} from "@application/errors/ValidationError";
+import UserData from "@application/services/base/UserData";
 import UserRepository from "@domain/repository/UserRepository";
-import UserValidation from "@domain/services/UserValidation";
+import UserValidation from "@application/services/user/UserValidation";
 
 type Constructor<T> = new (...args: any[]) => T;
 

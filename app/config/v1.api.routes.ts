@@ -1,9 +1,9 @@
-import { UserController } from '@api/v1/controllers/UserController';
-import { SpaTokenController } from '@api/v1/controllers/SpaTokenController';
+import { UserController } from '@application/api/v1/controllers/UserController';
+import { SpaTokenController } from '@application/api/v1/controllers/SpaTokenController';
 import { Container } from '@config/Container';
-import {UserService} from "@services/UserService";
-import Token from "@services/base/Token";
-import UserValidation from "@domain/services/UserValidation";
+import {UserService} from "@application/services/UserService";
+import Token from "@application/services/base/Token";
+import UserValidation from "@application/services/user/UserValidation";
 
 const container = new Container();
 

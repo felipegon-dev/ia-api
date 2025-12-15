@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Token from '@services/base/Token';
+import Token from '@application/services/base/Token';
 import UserValidation from "@domain/services/UserValidation";
 /**
  * Access without authentication to get a token for SPA apps

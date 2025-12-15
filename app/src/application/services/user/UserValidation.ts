@@ -1,6 +1,6 @@
 import UserRepository from "@domain/repository/UserRepository";
 import { Request } from 'express';
-import UserData from "@services/base/UserData";
+import UserData from "@application/services/base/UserData";
 
 // todo
 export default class UserValidation {

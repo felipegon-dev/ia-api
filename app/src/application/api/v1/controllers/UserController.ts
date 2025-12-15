@@ -1,7 +1,6 @@
 import {Request, Response} from 'express';
-import { UserService } from '@services/UserService';
-import Token from "@services/base/Token";
-
+import { UserService } from '@application/services/UserService';
+import Token from "@application/services/base/Token";
 
 export class UserController {
     private token: Token;
