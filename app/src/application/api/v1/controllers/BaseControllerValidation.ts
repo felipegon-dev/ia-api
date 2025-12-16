@@ -5,9 +5,9 @@ import UserDomainValidation from "@application/services/user/UserDomainValidatio
 export class BaseControllerValidation {
     constructor(protected token: Token, private userDomainValidation: UserDomainValidation) {}
 
-    protected validate(req: Request){
+    protected async validate(req: Request){
         this.validateAuth(req);
-        this.validateUserDomain(req);
+        await this.validateUserDomain(req);
     }
 
     protected async validateUserDomain(req: Request) {

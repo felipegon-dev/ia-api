@@ -12,7 +12,7 @@ export class SpaTokenController extends BaseControllerValidation{
      * @param res
      */
     getToken = async (req: Request, res: Response) => {
-        this.validateUserDomain(req);
+        await this.validateUserDomain(req);
         res.status(200).json({ success: true, data: this.token.get(req, res)});
     };
 }
