@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
-import Token from '@application/services/base/Token';
-import UserValidation from "@domain/services/UserValidation";
+import {BaseControllerValidation} from "@application/api/v1/controllers/BaseControllerValidation";
 /**
  * Access without authentication to get a token for SPA apps
  */
 
-export class SpaTokenController {
-    constructor(private token: Token, private userValidation: UserValidation) {}
+export class SpaTokenController extends BaseControllerValidation{
 
     /**
      * Access without authentication to get a token for SPA apps
@@ -14,7 +12,7 @@ export class SpaTokenController {
      * @param res
      */
     getToken = async (req: Request, res: Response) => {
-        this.userValidation.validate(req);
+        this.validateUserDomain(req);
         res.status(200).json({ success: true, data: this.token.get(req, res)});
     };
 }

@@ -134,6 +134,7 @@ class Token {
         if (tokenFp.srvHost !== reqData.srvHost) return false;
         if (tokenFp.host !== reqData.host) return false;
         if (tokenFp.srvReferer !== reqData.srvReferer) return false;
+        if (tokenFp.host !== reqData.srvReferer) return false;
 
         return true;
     }

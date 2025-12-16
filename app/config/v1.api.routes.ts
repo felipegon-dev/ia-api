@@ -1,9 +1,8 @@
 import { UserController } from '@application/api/v1/controllers/UserController';
 import { SpaTokenController } from '@application/api/v1/controllers/SpaTokenController';
 import { Container } from '@config/Container';
-import {UserService} from "@application/services/UserService";
 import Token from "@application/services/base/Token";
-import UserValidation from "@application/services/user/UserValidation";
+import UserDomainValidation from "@application/services/user/UserDomainValidation";
 
 const container = new Container();
 
@@ -20,13 +19,13 @@ const v1ApiRoutes: RouteConfig[] = [
         controller: UserController,
         method: 'getUserById',
         path: '/api/v1/user/:id',
-        requires: [UserService, Token]
+        requires: [Token, UserDomainValidation]
     },
     {
         controller: SpaTokenController,
         method: 'getToken',
         path: '/api/v1/token',
-        requires: [Token, UserValidation],
+        requires: [Token, UserDomainValidation],
     }
 ];
 

@@ -1,21 +1,11 @@
 import {Request, Response} from 'express';
-import { UserService } from '@application/services/UserService';
-import Token from "@application/services/base/Token";
+import {BaseControllerValidation} from "@application/api/v1/controllers/BaseControllerValidation";
 
-export class UserController {
-    private token: Token;
-    private userService: UserService;
-
-    constructor(userService :UserService, token: Token) {
-        this.token = token;
-        this.userService = userService;
-    }
+export class UserController extends BaseControllerValidation{
 
     getUserById = async (req: Request, res: Response) => {
-        this.token.validate(req);
-        const userId = req.params.id;
-        const user = await this.userService.getUserById(userId);
-        res.status(200).json({success: true, data: user});
+        this.validate(req);
+        res.status(200).json({success: true, data: { id: 1, name: "Johassssn kkg" }});
     }
 
 }
