@@ -1,0 +1,37 @@
+import { UserExtended } from '@apptypes/UserExtended';
+
+/* =========================
+   DTOs de salida API
+========================= */
+export interface UserPaymentMethodDTO {
+    code: string;
+    name: string;
+}
+
+export interface UserDTO {
+    paymentMethods: UserPaymentMethodDTO[];
+}
+
+/* =========================
+   Mapper User → UserDTO
+========================= */
+export function toUserDTO(user: UserExtended): UserDTO {
+    return {
+        paymentMethods: (user.userPaymentMethods ?? [])
+            .map((upm): UserPaymentMethodDTO | null => {
+                const pm = upm.paymentMethod;
+
+                if (!pm) {
+                    return null;
+                }
+
+                return {
+                    code: pm.code ?? '',
+                    name: pm.name,
+                };
+            })
+            .filter(
+                (pm: UserPaymentMethodDTO | null): pm is UserPaymentMethodDTO => pm !== null
+            ),
+    };
+}

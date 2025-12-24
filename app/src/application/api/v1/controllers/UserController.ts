@@ -1,11 +1,16 @@
-import {Request, Response} from 'express';
-import {BaseControllerValidation} from "@application/api/v1/controllers/BaseControllerValidation";
+import { Request, Response } from 'express';
+import { BaseController } from '@application/api/v1/controllers/BaseController';
+import { toUserDTO, UserDTO } from '@application/api/v1/response/dto/UserDTO';
+import { UserExtended } from '@apptypes/UserExtended';
 
-export class UserController extends BaseControllerValidation{
+export class UserController extends BaseController {
 
     getUserById = async (req: Request, res: Response) => {
-        await this.validate(req);
-        res.status(200).json({success: true, data: { id: 1, name: "Johassssn kkg" }});
+        const user: UserExtended = await this.validate(req);
+        const userDTO: UserDTO = toUserDTO(user);
+        res.status(200).json({
+            success: true,
+            data: userDTO
+        });
     }
-
 }

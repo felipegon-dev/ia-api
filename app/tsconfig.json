@@ -13,6 +13,7 @@
       "@application/*": ["src/application/*"],
       "@config/*": ["config/*"],
       "@domain/*": ["src/domain/*"],
+      "@apptypes/*": ["src/types/*"],
       "@infrastructure/*": ["src/infrastructure/*"]
     },
     "outDir": "dist"

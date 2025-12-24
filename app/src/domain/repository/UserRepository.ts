@@ -1,6 +1,6 @@
 import db from "@config/database/models";
 import {UserStatus} from "@domain/vo/UserStatus";
-import {UserWithDomains} from "../../types/UserWithDomains";
+import {UserExtended} from "@apptypes/UserExtended";
 
 export default class UserRepository {
     private User = db.User;
@@ -21,7 +21,7 @@ export default class UserRepository {
      * Buscar un usuario por su código único
      * @param code - código del usuario
      */
-    async findByCode(code: string): Promise<UserWithDomains | null> {
+    async findByCode(code: string): Promise<UserExtended | null> {
         const result = await this.User.findOne({
             where: {
                 code,
@@ -31,11 +31,23 @@ export default class UserRepository {
                 {
                     model: db.UserDomain,
                     as: 'domains'
+                },
+                {
+                    model: db.UserPaymentMethod,
+                    as: 'userPaymentMethods',
+                    include: [
+                        {
+                            model: db.PaymentMethod,
+                            as: 'paymentMethod',
+                            attributes: ['id', 'name', 'code']
+                        }
+                    ]
                 }
             ]
         });
 
-        return result as UserWithDomains | null;
+        return result as UserExtended | null;
     }
+
 
 }

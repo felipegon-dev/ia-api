@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import {BaseControllerValidation} from "@application/api/v1/controllers/BaseControllerValidation";
+import {BaseController} from "@application/api/v1/controllers/BaseController";
 /**
  * Access without authentication to get a token for SPA apps
  */
 
-export class SpaTokenController extends BaseControllerValidation{
+export class SpaTokenController extends BaseController{
 
     /**
      * Access without authentication to get a token for SPA apps

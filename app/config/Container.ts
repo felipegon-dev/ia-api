@@ -4,6 +4,7 @@ import UserData from "@application/services/base/UserData";
 import UserRepository from "@domain/repository/UserRepository";
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
 import Url from '@application/util/Url'
+import PaymentRepository from "@domain/repository/PaymentRepository";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -31,6 +32,7 @@ export class Container {
                 this.get((Url))
             )
         )
+        this.instances.set(PaymentRepository, new PaymentRepository());
     }
 
     public get<T>(Service: Constructor<T>): T {

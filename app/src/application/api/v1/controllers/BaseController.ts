@@ -1,17 +1,18 @@
 import { Request } from 'express';
 import Token from '@application/services/base/Token';
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
+import {UserExtended} from "@apptypes/UserExtended";
 
-export class BaseControllerValidation {
-    constructor(protected token: Token, private userDomainValidation: UserDomainValidation) {}
+export class BaseController {
+    constructor(protected token: Token, protected userDomainValidation: UserDomainValidation) {}
 
-    protected async validate(req: Request){
+    protected async validate(req: Request): Promise<UserExtended>{
         this.validateAuth(req);
-        await this.validateUserDomain(req);
+        return this.validateUserDomain(req);
     }
 
     protected async validateUserDomain(req: Request) {
-        await this.userDomainValidation.validate(req);
+        return this.userDomainValidation.validate(req);
     }
     protected validateAuth(req: Request) {
         this.token.validate(req);
