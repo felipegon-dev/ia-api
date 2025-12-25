@@ -3,6 +3,9 @@ import { SpaTokenController } from '@application/api/v1/controllers/SpaTokenCont
 import { Container } from '@config/Container';
 import Token from "@application/services/base/Token";
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
+import {PaymentController} from "@application/api/v1/controllers/PaymentController";
+import {CartManager} from "@application/services/cart/CartManager";
+import {PaymentManager} from "@application/services/payment/paymentManager";
 
 const container = new Container();
 
@@ -26,6 +29,13 @@ const v1ApiRoutes: RouteConfig[] = [
         method: 'getToken',
         path: '/api/v1/token',
         requires: [Token, UserDomainValidation],
+    },
+    {
+        controller: PaymentController,
+        method: 'postPayment',
+        path: '/api/v1/payment',
+        requires: [Token, CartManager, PaymentManager],
+        httpMethod: 'post'
     }
 ];
 
