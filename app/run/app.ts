@@ -3,13 +3,14 @@ import path from 'path';
 import logger from 'morgan';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import {AppMode} from "@config/constants/AppMode";
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import { initRoutesApi } from './modules/routes-api';
 import { errorHandler } from './modules/error-handler';
 
 const app = express();
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV !== AppMode.PRODUCTION;
 
 // Middlewares
 app.use(logger(isDev ? 'dev' : 'common'));

@@ -39,10 +39,17 @@ module.exports = {
         defaultValue: 'active'
       },
 
+      mode: {
+        type: Sequelize.ENUM('development', 'production'),
+        allowNull: false,
+        defaultValue: 'development',
+        comment: 'Environment for the credentials'
+      },
+
       paymentToken: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.TEXT,
         allowNull: true,
-        comment: 'Provider token used to charge the user'
+        comment: 'Encrypted provider token (Client ID + Secret)'
       },
 
       metadata: {
@@ -76,6 +83,9 @@ module.exports = {
     if (queryInterface.sequelize.getDialect() === 'postgres') {
       await queryInterface.sequelize.query(
           'DROP TYPE IF EXISTS "enum_userPaymentMethods_status";'
+      );
+      await queryInterface.sequelize.query(
+          'DROP TYPE IF EXISTS "enum_userPaymentMethods_mode";'
       );
     }
 

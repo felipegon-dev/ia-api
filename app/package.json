@@ -7,6 +7,7 @@
     "dev": "nodemon --watch src --watch run --ext ts,tsx,js,json run/www"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^17.2.3",

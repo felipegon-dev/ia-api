@@ -5,7 +5,7 @@ import UserRepository from "@domain/repository/UserRepository";
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
 import Url from '@application/util/Url'
 import PaymentRepository from "@domain/repository/PaymentRepository";
-import {PaymentManager} from "@application/services/payment/paymentManager";
+import {PaymentFactory} from "@application/services/payment/PaymentFactory";
 import {CartManager} from "@application/services/cart/CartManager";
 
 type Constructor<T> = new (...args: any[]) => T;
@@ -39,10 +39,10 @@ export class Container {
 
         // Payment services
         this.instances.set(PaymentRepository, new PaymentRepository());
-        this.instances.set(PaymentManager, new PaymentManager())
+        this.instances.set(PaymentFactory, new PaymentFactory())
 
         // Cart Services
-        this.instances.set(CartManager, new CartManager());
+        this.instances.set(CartManager, new CartManager(this.get(UserRepository)));
     }
 
     public get<T>(Service: Constructor<T>): T {

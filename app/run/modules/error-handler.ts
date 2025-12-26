@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '@application/errors/AppError';
+import {AppMode} from "@config/constants/AppMode";
+
 
 export const catchAsync =
     (fn: Function) =>
@@ -8,11 +10,11 @@ export const catchAsync =
 
 export function errorHandler(
     err: any,
-    req: Request,
     res: Response,
-    next: NextFunction
 ) {
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = process.env.NODE_ENV !== AppMode.PRODUCTION;
+
+    console.error(err);
 
     // Errores controlados (nuestros)
     if (err instanceof AppError) {

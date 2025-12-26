@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { HEADERS } from "@config/headers";
+import { Request } from "express";
+import { HEADERS } from "@config/constants/headers";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { ValidationError } from "@application/errors/ValidationError";
 

@@ -25,3 +25,15 @@ services:
       - ia-api
     networks:
       - ia-manager
+
+  ia-api-seeders:
+    container_name: ia-api-seeders
+    build:
+      context: ../../ia-api/docker
+      dockerfile: seeders.Dockerfile  # puedes crear un Dockerfile específico para seeders si quieres
+    volumes:
+      - ../../ia-api/app:/usr/src/app
+    depends_on:
+      - ia-api
+    networks:
+      - ia-manager

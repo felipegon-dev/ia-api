@@ -5,7 +5,7 @@ import Token from "@application/services/base/Token";
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
 import {PaymentController} from "@application/api/v1/controllers/PaymentController";
 import {CartManager} from "@application/services/cart/CartManager";
-import {PaymentManager} from "@application/services/payment/paymentManager";
+import {PaymentFactory} from "@application/services/payment/PaymentFactory";
 
 const container = new Container();
 
@@ -34,7 +34,7 @@ const v1ApiRoutes: RouteConfig[] = [
         controller: PaymentController,
         method: 'postPayment',
         path: '/api/v1/payment',
-        requires: [Token, CartManager, PaymentManager],
+        requires: [Token, CartManager, PaymentFactory],
         httpMethod: 'post'
     }
 ];

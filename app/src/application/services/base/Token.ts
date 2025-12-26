@@ -1,14 +1,15 @@
 import { Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import crypto from 'crypto';
 import { UnauthorizedError } from "@application/errors/UnauthorizedError";
-import { HEADERS } from "@config/headers";
-import UserData, {UserDataPayload} from "@application/services/base/UserData";
+import { HEADERS } from "@config/constants/headers";
+import UserData, { UserDataPayload } from "@application/services/base/UserData";
+import { Crypt } from "@application/services/base/Crypt";
+
 // @ts-ignore
-import type { TokenPayload } from '@application/services/base/TokenPayload'
+import type { TokenPayload } from '@application/services/base/TokenPayload';
+import {ValidationError} from "@application/errors/ValidationError";
 
 /**
- * todo: nueva idea:
  * 1- SPA -> generar token API
  * 2- SPA guardar en local storage
  * 3- SPA envia peticion de user get con token
@@ -17,32 +18,37 @@ import type { TokenPayload } from '@application/services/base/TokenPayload'
  * 4- SPA -> antes de hacer cualquier peticion mira si el token ha expirado y solicita renovarlo
  */
 class Token {
-    private expiresIn = process.env.TOKEN_EXPIRATION || '10m';
-    private algorithm = 'aes-256-gcm';
+    private expiresIn: string;
+    private crypt: Crypt;
 
-    constructor(private userData: UserData) {}
+    constructor(private userData: UserData) {
+        const expires = process.env.TOKEN_EXPIRATION;
+        if (!expires) throw new ValidationError('TOKEN_EXPIRATION is not defined');
+        this.expiresIn = expires;
+
+        const algorithm = process.env.TOKEN_ALGORITHM;
+        if (!algorithm) throw new ValidationError('TOKEN_ALGORITHM is not defined');
+
+        const key = process.env.TOKEN_ENCRYPTION_SECRET;
+        if (!key) throw new ValidationError('TOKEN_ENCRYPTION_SECRET is not defined');
+
+        this.crypt = new Crypt(algorithm, key);
+    }
 
     /**
-     * Valida que el token existe, es válido y coincide con el fingerprint
+     * Validates that the token exists, is valid, and fingerprint matches
      */
     public validate(req: Request): TokenPayload {
         const token = req.headers[HEADERS.TOKEN_API] as string | null;
         if (!token) throw new UnauthorizedError("Token not found");
 
-        // 1️⃣ Descifrar el token si aplica
-        const jwtToken = this.decryptToken(token);
-
-        // 2️⃣ Verificar la firma
+        const jwtToken = this.isEncryptionEnabled() ? this.crypt.decrypt(token) : token;
         const decoded = this.verifyJwt(jwtToken);
         if (!decoded) throw new UnauthorizedError("Invalid token signature");
 
-        // 3️⃣ Castear correctamente a TokenPayload
         const tokenPayload = decoded as TokenPayload;
-
-        // 4️⃣ Obtener datos actuales de la request
         const currentUserData = this.userData.set(req).get();
 
-        // 5️⃣ Comparar fingerprint
         if (!this.matchFingerprint(tokenPayload.fp, currentUserData)) {
             throw new UnauthorizedError("Fingerprint mismatch");
         }
@@ -51,7 +57,7 @@ class Token {
     }
 
     /**
-     * Genera un token nuevo usando los datos de la request
+     * Generates a new token based on the request
      */
     public get(req: Request, res: Response): string {
         const tokenPayload = this.getTokenPayload(req);
@@ -59,7 +65,7 @@ class Token {
     }
 
     /**
-     * Obtiene TokenPayload actual a partir de la request
+     * Extract TokenPayload from request
      */
     public getTokenPayload(req: Request): TokenPayload {
         const user = this.userData.set(req).get();
@@ -80,19 +86,9 @@ class Token {
         };
     }
 
-    private decryptToken(token: string): string {
-        if (!this.isEncryptionEnabled()) return token;
-
-        const [ivB64, authTagB64, encrypted] = token.split('.');
-        if (!ivB64 || !authTagB64 || !encrypted) throw new UnauthorizedError('Invalid token format');
-
-        const decipher = crypto.createDecipheriv(this.algorithm, this.getEncryptionKey(), Buffer.from(ivB64, 'base64'));
-        // @ts-ignore
-        decipher.setAuthTag(Buffer.from(authTagB64, 'base64'));
-
-        return decipher.update(encrypted, 'base64', 'utf8') + decipher.final('utf8');
-    }
-
+    /**
+     * Verifies JWT signature
+     */
     private verifyJwt(jwtToken: string): JwtPayload | null {
         try {
             return jwt.verify(jwtToken, this.getJWTSecret()) as JwtPayload;
@@ -101,62 +97,29 @@ class Token {
         }
     }
 
-    private matchFingerprint(
-        tokenFp: TokenPayload['fp'],
-        reqData: UserDataPayload
-    ): boolean {
+    /**
+     * Matches fingerprint fields
+     */
+    private matchFingerprint(tokenFp: TokenPayload['fp'], reqData: UserDataPayload): boolean {
         const requiredFields: (keyof TokenPayload['fp'])[] = [
-            'srvUserAgent',
-            'forwardedFor',
-            'realIp',
-            'platform',
-            'timezone',
-            'srvHost',
-            'host',
-            'srvReferer'
+            'srvUserAgent', 'forwardedFor', 'realIp', 'platform',
+            'timezone', 'srvHost', 'host', 'srvReferer'
         ];
 
         for (const field of requiredFields) {
-            const tokenValue = tokenFp[field as keyof TokenPayload['fp']];
-            const reqValue = reqData[field as keyof typeof reqData];
-
-            if (tokenValue == null || reqValue == null) { // null o undefined
-                return false;
-            }
+            if (tokenFp[field] !== reqData[field as keyof typeof reqData]) return false;
         }
-
-        // Comparación de campos
-        if (tokenFp.srvUserAgent !== reqData.srvUserAgent) return false;
-        if (tokenFp.forwardedFor !== reqData.forwardedFor) return false;
-        if (tokenFp.realIp !== reqData.realIp) return false;
-        if (tokenFp.platform !== reqData.platform) return false;
-        if (tokenFp.timezone !== reqData.timezone) return false;
-        if (tokenFp.srvHost !== reqData.srvHost) return false;
-        if (tokenFp.host !== reqData.host) return false;
-        if (tokenFp.srvReferer !== reqData.srvReferer) return false;
-        if (tokenFp.host !== reqData.srvReferer) return false;
 
         return true;
     }
 
-
-
-
+    /**
+     * Generates JWT token (encrypted if enabled)
+     */
     private generateToken(data: object): string {
         // @ts-ignore
         const jwtToken = jwt.sign(data, this.getJWTSecret(), { expiresIn: this.expiresIn });
-
-        if (!this.isEncryptionEnabled()) return jwtToken;
-
-        const iv = crypto.randomBytes(12);
-        const cipher = crypto.createCipheriv(this.algorithm, this.getEncryptionKey(), iv);
-
-        let encrypted = cipher.update(jwtToken, 'utf8', 'base64');
-        encrypted += cipher.final('base64');
-
-        // @ts-ignore
-        const authTag = cipher.getAuthTag().toString('base64');
-        return `${iv.toString('base64')}.${authTag}.${encrypted}`;
+        return this.isEncryptionEnabled() ? this.crypt.encrypt(jwtToken) : jwtToken;
     }
 
     private isEncryptionEnabled(): boolean {
@@ -167,11 +130,6 @@ class Token {
         if (!process.env.JWT_SECRET) throw new UnauthorizedError('JWT_SECRET is not defined');
         return process.env.JWT_SECRET;
     }
-
-    private getEncryptionKey(): Buffer {
-        if (!process.env.TOKEN_ENCRYPTION_SECRET) throw new UnauthorizedError('TOKEN_ENCRYPTION_SECRET is not defined');
-        return Buffer.from(process.env.TOKEN_ENCRYPTION_SECRET, 'utf8');
-    }
 }
 
-export default Token
+export default Token;
