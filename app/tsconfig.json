@@ -12,6 +12,7 @@
     "paths": {
       "@application/*": ["src/application/*"],
       "@config/*": ["config/*"],
+      "@run/*": ["run/*"],
       "@domain/*": ["src/domain/*"],
       "@apptypes/*": ["src/types/*"],
       "@infrastructure/*": ["src/infrastructure/*"]
