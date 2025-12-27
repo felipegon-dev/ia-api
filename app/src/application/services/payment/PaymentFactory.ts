@@ -1,12 +1,28 @@
-import {PaymentType} from "@application/services/payment/Payment";
-import {Paypal} from "@application/services/payment/paypal/Paypal";
+import {PaymentRequestInterface, PaymentResponseInterface, PaymentType} from "@application/services/payment/Payment";
+import {PaypalRequest} from "@application/services/payment/paypal/PaypalRequest";
+import {PaypalResponse} from "@application/services/payment/paypal/PaypalResponse";
 
 export class PaymentFactory {
 
-    get(type: PaymentType) {
+    constructor(
+        private paypalRequest: PaypalRequest,
+        private paypalResponse: PaypalResponse
+    ) {
+    }
+
+    getRequest(type: PaymentType): PaymentRequestInterface {
         switch (type) {
             case PaymentType.PAYPAL:
-                return new Paypal();
+                return this.paypalRequest;
+            default:
+                throw new Error(`Unsupported payment method: ${type}`);
+        }
+    }
+
+    getResponse(type: PaymentType): PaymentResponseInterface {
+        switch (type) {
+            case PaymentType.PAYPAL:
+                return this.paypalResponse;
             default:
                 throw new Error(`Unsupported payment method: ${type}`);
         }

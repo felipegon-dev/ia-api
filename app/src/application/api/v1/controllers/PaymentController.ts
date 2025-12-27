@@ -24,18 +24,27 @@ export class PaymentController extends BaseAuthController{
             req.body.paymentCode
         );
 
-        const payment = this.paymentFactory.get(cartManager.getPaymentType());
+        const paymentRequest = this.paymentFactory.getRequest(cartManager.getPaymentType());
 
-        await payment.setParameters({
+        paymentRequest.setParameters({
             description: cartManager.getDescription(),
             cartItems: cartManager.getCartItems(),
-            token: cartManager.getPaymentToken(),
+            paymentToken: cartManager.getPaymentToken(),
             cancelUrl: cartManager.getCancelUrl(),
+            requestId: cartManager.getRequestId(),
         });
 
         res.status(200).json({
             success: true,
-            data: await payment.getPaymentUrl()
+            data: await paymentRequest.getPaymentUrl()
         });
+    }
+
+    callbackPayment = async (req: Request, res: Response) => {
+        const body = req.body;
+
+        console.log(req)
+        console.log("===== PayPal Callback Received =====");
+        console.log("Full request body:", JSON.stringify(body, null, 2));
     }
 }

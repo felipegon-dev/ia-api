@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '@application/errors/AppError';
-import {AppMode} from "@config/constants/AppMode";
+import {isDevelopmentMode} from "@config/constants/AppMode";
 
 
 export const catchAsync =
@@ -12,8 +12,6 @@ export function errorHandler(
     err: any,
     res: Response,
 ) {
-    const isDev = process.env.NODE_ENV !== AppMode.PRODUCTION;
-
     console.error(err);
 
     // Errores controlados (nuestros)
@@ -22,7 +20,7 @@ export function errorHandler(
             success: false,
             message: err.message,
             code: err.code,
-            ...(isDev && { stack: err.stack }),
+            ...(isDevelopmentMode && { stack: err.stack }),
             ...(err instanceof Error && 'details' in err
                 ? { details: (err as any).details }
                 : {}),
@@ -33,6 +31,6 @@ export function errorHandler(
         success: false,
         message: 'Internal server error',
         code: 'INTERNAL_ERROR',
-        ...(isDev && { stack: err?.stack }),
+        ...(isDevelopmentMode && { stack: err?.stack }),
     });
 }

@@ -6,8 +6,9 @@ import UserDomainValidation from "@application/services/user/UserDomainValidatio
 import {PaymentController} from "@application/api/v1/controllers/PaymentController";
 import {CartManager} from "@application/services/cart/CartManager";
 import {PaymentFactory} from "@application/services/payment/PaymentFactory";
+import {SHARED_URLS} from "@config/constants/sharedUrls";
 
-const container = new Container();
+export const container = new Container();
 
 export interface RouteConfig {
     controller: any;          // Clase del controlador
@@ -17,7 +18,7 @@ export interface RouteConfig {
     requires?: any[];         // Dependencias / middlewares
 }
 
-const v1ApiRoutes: RouteConfig[] = [
+export const v1ApiRoutes: RouteConfig[] = [
     {
         controller: UserController,
         method: 'getUserById',
@@ -36,8 +37,12 @@ const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/payment',
         requires: [Token, UserDomainValidation, CartManager, PaymentFactory],
         httpMethod: 'post'
+    },
+    {
+        controller: PaymentController,
+        method: 'callbackPayment',
+        path: SHARED_URLS.PAYMENT_CALLBACK,
+        requires: [Token, UserDomainValidation, CartManager, PaymentFactory],
+        httpMethod: 'post'
     }
 ];
-
-export default v1ApiRoutes;
-export { container };

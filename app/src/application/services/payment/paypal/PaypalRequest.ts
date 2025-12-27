@@ -1,55 +1,35 @@
 import axios from 'axios';
-import {CartItems, Payment, PaymentParameters} from "@application/services/payment/Payment";
-import {PAYPAL_API_URLS, PAYPAL_CALLBACK_URLS, PAYPAL_ENDPOINTS} from "./PaypalUrls";
+import {
+    CartItems,
+    PaymentRequestInterface,
+    PaymentParameters,
+    PaymentType
+} from "@application/services/payment/Payment";
+import {PAYPAL_API_URLS, PAYPAL_ENDPOINTS} from "./PaypalUrls";
 import {Crypt} from "@application/services/base/Crypt";
 import {ValidationError} from "@application/errors/ValidationError";
 import {PaymentError} from "@application/errors/PaymentError";
-import {AppMode} from "@config/constants/AppMode";
+import {SHARED_URLS} from "@config/constants/sharedUrls";
+import {isProductionMode} from "@config/constants/AppMode";
 
 export interface PaypalCredentials {
     client_id: string;
     client_secret: string;
 }
 
-export class Paypal implements Payment {
+export class PaypalRequest implements PaymentRequestInterface {
     private paymentUrl: string | null = null;
-    private readonly mode: AppMode;
-    private readonly apiBaseUrl: string;
     private paymentParams: PaymentParameters | null = null;
     private credentials: PaypalCredentials | null = null;
 
-    constructor() {
-        this.mode = process.env.NODE_ENV === AppMode.DEVELOPMENT ? AppMode.DEVELOPMENT : AppMode.PRODUCTION;
-        this.apiBaseUrl = process.env.BASE_API_URL as string;
-    }
 
     /** Solo guarda los parámetros y descifra el token */
     public async setParameters(paymentParams: PaymentParameters): Promise<void> {
-        if (!paymentParams.token) throw new Error('Payment token is required');
+        if (!paymentParams.paymentToken) throw new Error('Payment token is required');
         if (!paymentParams.cartItems || paymentParams.cartItems.length === 0) throw new ValidationError('Cart items are required');
 
         this.paymentParams = paymentParams;
         this.setCredentials(paymentParams);
-    }
-
-    private setCredentials(paymentParams: PaymentParameters) {
-        const crypt = new Crypt(
-            process.env.TOKEN_ALGORITHM as string,
-            process.env.TOKEN_ENCRYPTION_SECRET as string
-        );
-
-        try {
-            const decrypted = crypt.decrypt(paymentParams.token);
-            const parsed: Partial<PaypalCredentials> = JSON.parse(decrypted);
-
-            if (!parsed.client_id || !parsed.client_secret) {
-                throw new ValidationError('Invalid decrypted PayPal credentials');
-            }
-
-            this.credentials = parsed as PaypalCredentials;
-        } catch (err) {
-            throw new PaymentError('Failed to decrypt PayPal credentials: ' + (err as Error).message);
-        }
     }
 
     /** Devuelve la URL de pago, creando la orden si no existe */
@@ -76,8 +56,28 @@ export class Paypal implements Payment {
         }
     }
 
+    private setCredentials(paymentParams: PaymentParameters) {
+        const crypt = new Crypt(
+            process.env.TOKEN_ALGORITHM as string,
+            process.env.TOKEN_ENCRYPTION_SECRET as string
+        );
+
+        try {
+            const decrypted = crypt.decrypt(paymentParams.paymentToken);
+            const parsed: Partial<PaypalCredentials> = JSON.parse(decrypted);
+
+            if (!parsed.client_id || !parsed.client_secret) {
+                throw new ValidationError('Invalid decrypted PayPal credentials');
+            }
+
+            this.credentials = parsed as PaypalCredentials;
+        } catch (err) {
+            throw new PaymentError('Failed to decrypt PayPal credentials: ' + (err as Error).message);
+        }
+    }
+
     private getPaypalApiUrl(): string {
-        return this.mode === AppMode.PRODUCTION ? PAYPAL_API_URLS.PROD : PAYPAL_API_URLS.SANDBOX;
+        return isProductionMode ? PAYPAL_API_URLS.PROD : PAYPAL_API_URLS.SANDBOX;
     }
 
     // =========================
@@ -128,14 +128,18 @@ export class Paypal implements Payment {
                                 },
                             },
                             items,
+                            custom_id: JSON.stringify({
+                                paymentType: PaymentType.PAYPAL,
+                                requestId: this.paymentParams?.requestId
+                            }),
                         },
                     ],
-                    application_context: {
-                        return_url: `${this.apiBaseUrl}${PAYPAL_CALLBACK_URLS.SUCCESS}`,
-                        cancel_url: this.paymentParams?.cancelUrl,
-                        user_action: 'PAY_NOW',
-                        brand_name: 'Your App Name',
-                    },
+                        application_context: {
+                            return_url: SHARED_URLS.PAYMENT_CALLBACK_FULL,
+                            cancel_url: this.paymentParams?.cancelUrl,
+                            user_action: 'PAY_NOW',
+                            brand_name: 'Your App Name',
+                        },
                 },
                 {
                     headers: {

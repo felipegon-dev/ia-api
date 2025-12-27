@@ -19,6 +19,7 @@ export class CartManager {
         this.userExtended = userExtended;
         await this.setPaymentMethodAttributes(paymentType);
         await this.setCartItems(cartItems);
+        await this.setRequest();
 
         return this;
     }
@@ -53,12 +54,17 @@ export class CartManager {
         return this.userPaymentMethodAttributes.paymentMethod.code as PaymentType;
     }
 
-    getCancelUrl(): string {
+    public getCancelUrl(): string {
         const cancelUrl = this.userData.get().lastUrl || this.userData.get().host;
         if (!cancelUrl) {
             throw new ValidationError("Cancel URL is not set");
         }
         return this.url.removeParamsFromUrl(cancelUrl);
+    }
+
+    getRequestId() {
+        // todo obtaing the request from object property
+        return new Date().getTime().toString();
     }
 
     // =====================
@@ -83,6 +89,7 @@ export class CartManager {
     }
 
     private async setCartItems(cartItems: CartItems[]): Promise<void> {
+        // todo: validation of cart items structure
         // todo: elastic search find items
         // todo: check prices and availability
         this.cartItems = cartItems;
@@ -105,5 +112,9 @@ export class CartManager {
             throw new ValidationError("User is not set");
         }
         return this.userExtended;
+    }
+
+    private async setRequest() {
+        // todo save into the db the request with cart items, user id, total amount, currency, status, etc.
     }
 }

@@ -8,8 +8,9 @@ export enum PaymentType {
 export interface PaymentParameters {
     description: string;
     cartItems: CartItems[];
-    token: string,
+    paymentToken: string,
     cancelUrl: string,
+    requestId?: string;
 }
 
 export interface CartItems {
@@ -20,8 +21,11 @@ export interface CartItems {
     currency: string;
 }
 
-export interface Payment {
+export interface PaymentRequestInterface {
     getPaymentUrl(): Promise<string>;
-
     setParameters(paymentParams: PaymentParameters): void;
+}
+
+
+export interface PaymentResponseInterface {
 }
