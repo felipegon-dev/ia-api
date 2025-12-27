@@ -1,21 +1,22 @@
 import { ValidationError } from "@application/errors/ValidationError";
 import { CartItems, PaymentType } from "@application/services/payment/Payment";
-import UserRepository from "@domain/repository/UserRepository";
 import { PaymentMethodAttributes, UserExtended, UserPaymentMethodAttributes } from "@apptypes/UserExtended";
+import UserData from "@application/services/base/UserData";
+import Url from "@application/util/Url";
 
 export class CartManager {
     private dbItems: any[] = [];
     private cartItems: CartItems[] = [];
-    private user: UserExtended | null = null;
+    private userExtended: UserExtended | null = null;
     private userPaymentMethodAttributes: UserPaymentMethodAttributes | null = null;
 
-    constructor(private userRepository: UserRepository) {}
+    constructor(private userData: UserData, private url: Url) {}
 
     // =====================
     // Public methods
     // =====================
-    public async get(userId: string, cartItems: CartItems[], paymentType: PaymentType): Promise<CartManager> {
-        await this.setUser(userId);
+    public async get(userExtended: UserExtended, cartItems: CartItems[], paymentType: PaymentType): Promise<CartManager> {
+        this.userExtended = userExtended;
         await this.setPaymentMethodAttributes(paymentType);
         await this.setCartItems(cartItems);
 
@@ -52,17 +53,17 @@ export class CartManager {
         return this.userPaymentMethodAttributes.paymentMethod.code as PaymentType;
     }
 
+    getCancelUrl(): string {
+        const cancelUrl = this.userData.get().lastUrl || this.userData.get().host;
+        if (!cancelUrl) {
+            throw new ValidationError("Cancel URL is not set");
+        }
+        return this.url.removeParamsFromUrl(cancelUrl);
+    }
+
     // =====================
     // Private methods
     // =====================
-    private async setUser(userId: string): Promise<void> {
-        const user = await this.userRepository.findByCode(userId);
-        if (!user) {
-            throw new ValidationError("Invalid user");
-        }
-        this.user = user;
-    }
-
     private async setPaymentMethodAttributes(paymentType: PaymentType): Promise<void> {
         const user = this.requireUser();
 
@@ -100,9 +101,9 @@ export class CartManager {
     }
 
     private requireUser(): UserExtended {
-        if (!this.user) {
+        if (!this.userExtended) {
             throw new ValidationError("User is not set");
         }
-        return this.user;
+        return this.userExtended;
     }
 }

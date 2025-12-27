@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { BaseController } from '@application/api/v1/controllers/BaseController';
+import { BaseAuthController } from '@application/api/v1/controllers/BaseAuthController';
 import { toUserDTO, UserDTO } from '@application/api/v1/response/dto/UserDTO';
 import { UserExtended } from '@apptypes/UserExtended';
 
-export class UserController extends BaseController {
+export class UserController extends BaseAuthController {
 
     getUserById = async (req: Request, res: Response) => {
         const user: UserExtended = await this.validate(req);

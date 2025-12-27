@@ -110,6 +110,17 @@ class Token {
             if (tokenFp[field] !== reqData[field as keyof typeof reqData]) return false;
         }
 
+        // Comparación de campos
+        if (tokenFp.srvUserAgent !== reqData.srvUserAgent) return false;
+        if (tokenFp.forwardedFor !== reqData.forwardedFor) return false;
+        if (tokenFp.realIp !== reqData.realIp) return false;
+        if (tokenFp.platform !== reqData.platform) return false;
+        if (tokenFp.timezone !== reqData.timezone) return false;
+        if (tokenFp.srvHost !== reqData.srvHost) return false;
+        if (tokenFp.host !== reqData.host) return false;
+        if (tokenFp.srvReferer !== reqData.srvReferer) return false;
+        if (tokenFp.host !== reqData.srvReferer) return false;
+
         return true;
     }
 

@@ -132,7 +132,7 @@ export class Paypal implements Payment {
                     ],
                     application_context: {
                         return_url: `${this.apiBaseUrl}${PAYPAL_CALLBACK_URLS.SUCCESS}`,
-                        cancel_url: `${this.apiBaseUrl}${PAYPAL_CALLBACK_URLS.CANCEL}`,
+                        cancel_url: this.paymentParams?.cancelUrl,
                         user_action: 'PAY_NOW',
                         brand_name: 'Your App Name',
                     },

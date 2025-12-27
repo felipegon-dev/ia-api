@@ -3,7 +3,7 @@ import Token from '@application/services/base/Token';
 import UserDomainValidation from "@application/services/user/UserDomainValidation";
 import {UserExtended} from "@apptypes/UserExtended";
 
-export class BaseController {
+export class BaseAuthController {
     constructor(protected token: Token, protected userDomainValidation: UserDomainValidation) {}
 
     protected async validate(req: Request): Promise<UserExtended>{

@@ -9,6 +9,7 @@ export interface PaymentParameters {
     description: string;
     cartItems: CartItems[];
     token: string,
+    cancelUrl: string,
 }
 
 export interface CartItems {

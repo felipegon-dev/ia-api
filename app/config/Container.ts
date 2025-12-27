@@ -42,7 +42,7 @@ export class Container {
         this.instances.set(PaymentFactory, new PaymentFactory())
 
         // Cart Services
-        this.instances.set(CartManager, new CartManager(this.get(UserRepository)));
+        this.instances.set(CartManager, new CartManager(this.get(UserData), this.get(Url)));
     }
 
     public get<T>(Service: Constructor<T>): T {

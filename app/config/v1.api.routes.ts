@@ -34,7 +34,7 @@ const v1ApiRoutes: RouteConfig[] = [
         controller: PaymentController,
         method: 'postPayment',
         path: '/api/v1/payment',
-        requires: [Token, CartManager, PaymentFactory],
+        requires: [Token, UserDomainValidation, CartManager, PaymentFactory],
         httpMethod: 'post'
     }
 ];

@@ -1,5 +1,9 @@
 export default class Url {
 
+    public removeParamsFromUrl(url: string): string {
+        return url.split('?')[0];
+    }
+
     /**
      * Normaliza un host o URL:
      * - elimina protocolo

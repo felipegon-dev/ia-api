@@ -13,11 +13,4 @@ export const PAYPAL_ENDPOINTS = {
 // URLs de callback en tu API
 export const PAYPAL_CALLBACK_URLS = {
     SUCCESS: '/api/v1/payment/callback',
-    CANCEL: '/api/v1/payment/callback?cancel=true',
-};
-
-// URL de retorno visible al usuario (frontend)
-export const PAYPAL_RETURN_URLS = {
-    TEST_SITE: 'https://test-site.com',
-    PROD_SITE: 'https://yourproduction-site.com',
 };

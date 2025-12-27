@@ -14,6 +14,7 @@ export interface UserDataPayload {
     timezone?: string;
     platform?: string;
     host?: string;
+    lastUrl?: string;
     // agrega más campos si vienen de jsUserData
     [key: string]: any; // opcional, para no perder jsUserData dinámico
 }

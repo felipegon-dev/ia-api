@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import {BaseController} from "@application/api/v1/controllers/BaseController";
+import {BaseAuthController} from "@application/api/v1/controllers/BaseAuthController";
 /**
  * Access without authentication to get a token for SPA apps
  */
 
-export class SpaTokenController extends BaseController{
+export class SpaTokenController extends BaseAuthController{
 
     /**
      * Access without authentication to get a token for SPA apps
