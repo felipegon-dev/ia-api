@@ -117,8 +117,8 @@ export class PaypalRequest implements PaymentRequestInterface {
 
     private async createPaypalOrder(accessToken: string) {
         const items = this.convert2PaypalItems();
-        const currency = this.getCurrency();
-        const totalAmount = this.getAmount();
+        const currency = this.paymentParams?.currency.value;
+        const totalAmount = this.paymentParams?.amount;
 
         try {
             return await axios.post(
@@ -172,17 +172,6 @@ export class PaypalRequest implements PaymentRequestInterface {
         }));
     }
 
-    private getAmount() {
-        return this.paymentParams!.cartItems
-            .reduce((sum, item) => sum + item.price * item.quantity, 0)
-            .toFixed(2);
-    }
-
-    private getCurrency() {
-        const currencies = new Set(this.paymentParams!.cartItems.map(i => i.currency));
-        if (currencies.size > 1) throw new ValidationError('All cart items must have the same currency');
-        return this.paymentParams!.cartItems[0].currency;
-    }
 
     private extractApprovalUrl(response: any): string {
         try {

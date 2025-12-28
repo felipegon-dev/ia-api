@@ -5,8 +5,8 @@ interface AddressItem {
 
 export class AddressManager {
     // todo
-    getShippingCost(): number {
-        return 0;
+    getShippingDetails(): string {
+        return ''
     }
 
     async get(user: UserExtended, addressItems: AddressItem[]): Promise<AddressManager> {

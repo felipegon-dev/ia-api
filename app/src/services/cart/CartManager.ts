@@ -1,5 +1,7 @@
 import { CartItems } from "@src/services/payment/Payment";
 import {  UserExtended } from "@apptypes/UserExtended";
+import {ValidationError} from "@src/errors/ValidationError";
+import {Currency} from "@config/database/vo/Currency";
 
 
 /**
@@ -16,17 +18,32 @@ export class CartManager {
     // =====================
     public async get(userExtended: UserExtended, cartItems: CartItems[]): Promise<CartManager> {
         this.userExtended = userExtended;
-        await this.setCartItems(cartItems);
+        this.cartItems = cartItems;
+        this.validateCartItems();
 
         return this;
     }
 
     public getAmount(): number {
-        return 1;
+        return parseFloat(
+            this.cartItems
+                .reduce((sum, item) => sum + item.price * item.quantity, 0)
+                .toFixed(2)
+        );
     }
 
-    public getCurrency(): string {
-        return "EUR";
+    public getCurrency(): Currency {
+        if (!this.cartItems.length) {
+            throw new ValidationError('Cart is empty, cannot determine currency');
+        }
+
+        const currencies = new Set(this.cartItems.map(i => i.currency));
+        if (currencies.size > 1) {
+            throw new ValidationError('All cart items must have the same currency');
+        }
+
+        // Usamos el value object Currency.of() para obtener el VO
+        return Currency.of(this.cartItems[0].currency);
     }
 
     public getDescription(): string {
@@ -38,28 +55,10 @@ export class CartManager {
     }
 
     public getCartItemsJson(): string {
-        return '';
+        return JSON.stringify(this.cartItems);
     }
 
-    // =====================
-    // Private methods
-    // =====================
-    private async setCartItems(cartItems: CartItems[]): Promise<void> {
-        // todo: validation of cart items structure
-        // todo: elastic search find items
-        // todo: check prices and availability
-        this.cartItems = cartItems;
-    }
-
-    private checkCartAvailability(): boolean {
-        return true;
-    }
-
-    private checkCartPrices(): boolean {
-        return true;
-    }
-
-    private getCartItemsFromDatabase(userId: string, items: any[]): any[] {
-        return [];
+    private validateCartItems(): void {
+        // todo: optional for dev, prod mandatory
     }
 }

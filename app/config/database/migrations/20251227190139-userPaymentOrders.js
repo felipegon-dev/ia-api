@@ -65,11 +65,10 @@ module.exports = {
         comment: 'Total amount of the order, all cart items with shipping'
       },
 
-      shippingCost: {
-        type: Sequelize.DECIMAL(12, 2),
-        allowNull: true,
-        defaultValue: 0,
-        comment: 'Shipping cost for the order'
+      shippingDetails: {
+        type: Sequelize.JSON,
+        allowNull: false,
+        comment: 'Shipping methods with cost for the order'
       },
 
       description: {

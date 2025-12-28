@@ -1,3 +1,4 @@
+import {Currency} from "@config/database/vo/Currency";
 
 export enum PaymentType {
     PAYPAL = 'paypal',
@@ -7,6 +8,8 @@ export enum PaymentType {
 
 export interface PaymentParameters {
     cartItems: CartItems[];
+    currency: Currency,
+    amount: number,
     paymentToken: string,
     cancelUrl: string,
     returnUrl?: string,
@@ -28,7 +31,6 @@ export interface PaymentRequestInterface {
     getOrderId(): string;
     getMetadata(): string;
 }
-
 
 export interface PaymentSyncInterface {
 }

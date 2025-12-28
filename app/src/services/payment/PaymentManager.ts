@@ -79,7 +79,7 @@ export class PaymentManager {
         addressItems: string;
         amount: number;
         status: string;
-        shippingCost: number;
+        shippingDetails: string;
         description: string
     }) {
         await this.userPaymentOrdersRepository.create({
@@ -90,7 +90,7 @@ export class PaymentManager {
             cartItems: param.cartItems,
             addressItems: param.addressItems,
             amount: param.amount,
-            shippingCost: param.shippingCost,
+            shippingDetails: param.shippingDetails,
             description: param.description,
             status: param.status as 'pending' | 'completed' | 'failed' | 'cancelled',
         })

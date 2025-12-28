@@ -51,10 +51,9 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
 
-            shippingCost: {
-                type: DataTypes.DECIMAL(12, 2),
-                allowNull: true,
-                defaultValue: 0,
+            shippingDetails: {
+                type: DataTypes.JSON,
+                allowNull: false,
             },
 
             description: {

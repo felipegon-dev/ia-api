@@ -30,6 +30,8 @@ export class PaymentController extends BaseAuthController{
 
         providerRequest.setParameters({
             cartItems: cartManager.getCartItems(),
+            currency: cartManager.getCurrency(),
+            amount: cartManager.getAmount(),
             paymentToken: paymentManager.getPaymentToken(),
             cancelUrl: paymentManager.getCancelUrl(),
             returnUrl: paymentManager.getReturnUrl(),
@@ -47,7 +49,7 @@ export class PaymentController extends BaseAuthController{
             addressItems: addressManager.getAddressItemsJson(),
             amount: cartManager.getAmount(),
             status: UserPaymentOrderStatus.PENDING.Value, // the order is pending until confirmed with sync or callback
-            shippingCost: addressManager.getShippingCost(),
+            shippingDetails: addressManager.getShippingDetails(),
             description: cartManager.getDescription(),
         });
 

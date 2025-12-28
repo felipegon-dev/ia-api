@@ -78,7 +78,7 @@ declare module "@config/database/models" {
         cartItems: string;
         addressItems: string;
         amount?: number | null;
-        shippingCost?: number | null;
+        shippingDetails?: string | null;
         description?: string | null;
         status: 'pending' | 'completed' | 'failed' | 'cancelled';
         createdAt?: Date;
@@ -87,7 +87,7 @@ declare module "@config/database/models" {
 
     export type UserPaymentOrdersCreationAttributes = Optional<
         UserPaymentOrdersAttributes,
-        'id' | 'providerMetadata' | 'providerAttemptsSync' | 'amount' | 'shippingCost' | 'description' | 'createdAt' | 'updatedAt'
+        'id' | 'providerMetadata' | 'providerAttemptsSync' | 'amount' | 'shippingDetails' | 'description' | 'createdAt' | 'updatedAt'
     >;
 
     // ----------------- Sequelize core -----------------
