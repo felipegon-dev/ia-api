@@ -7,6 +7,8 @@ import {PaymentController} from "@application/api/v1/controllers/PaymentControll
 import {CartManager} from "@application/services/cart/CartManager";
 import {PaymentFactory} from "@application/services/payment/PaymentFactory";
 import {SHARED_URLS} from "@config/constants/sharedUrls";
+import {AddressManager} from "@application/services/user/AddressManager";
+import {PaymentManager} from "@application/services/payment/PaymentManager";
 
 export const container = new Container();
 
@@ -35,14 +37,14 @@ export const v1ApiRoutes: RouteConfig[] = [
         controller: PaymentController,
         method: 'postPayment',
         path: '/api/v1/payment',
-        requires: [Token, UserDomainValidation, CartManager, PaymentFactory],
+        requires: [Token, UserDomainValidation, CartManager, PaymentFactory, AddressManager, PaymentManager],
         httpMethod: 'post'
     },
     {
         controller: PaymentController,
         method: 'callbackPayment',
-        path: SHARED_URLS.PAYMENT_CALLBACK,
-        requires: [Token, UserDomainValidation, CartManager, PaymentFactory],
+        path: '/api/v1/payment/sync',
+        requires: [Token, UserDomainValidation, CartManager, PaymentFactory, AddressManager, PaymentManager],
         httpMethod: 'post'
     }
 ];

@@ -1,4 +1,3 @@
-// @config/database/models.d.ts
 declare module "@config/database/models" {
     import { Model, Optional, Sequelize, FindOptions } from "sequelize";
 
@@ -14,7 +13,10 @@ declare module "@config/database/models" {
         updatedAt?: Date;
     };
 
-    export type UserCreationAttributes = Optional<UserAttributes, "id" | "createdAt" | "updatedAt">;
+    export type UserCreationAttributes = Optional<
+        UserAttributes,
+        "id" | "createdAt" | "updatedAt"
+    >;
 
     // ----------------- UserDomain -----------------
     export type UserDomainAttributes = {
@@ -25,7 +27,10 @@ declare module "@config/database/models" {
         updatedAt?: Date;
     };
 
-    export type UserDomainCreationAttributes = Optional<UserDomainAttributes, "id" | "createdAt" | "updatedAt">;
+    export type UserDomainCreationAttributes = Optional<
+        UserDomainAttributes,
+        "id" | "createdAt" | "updatedAt"
+    >;
 
     // ----------------- PaymentMethod -----------------
     export type PaymentMethodAttributes = {
@@ -62,16 +67,45 @@ declare module "@config/database/models" {
         "id" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
     >;
 
-    // ----------------- Sequelize Models -----------------
+    // ----------------- UserPaymentOrders -----------------
+    export type UserPaymentOrdersAttributes = {
+        id: number;
+        userPaymentMethodId: number;
+        providerId: string;
+        providerMetadata?: string;
+        providerAttemptsSync?: ProviderSyncAttempt[] | null;
+        cartItems: string;
+        addressItems: string;
+        amount?: number | null;
+        shippingCost?: number | null;
+        description?: string | null;
+        status: 'pending' | 'completed' | 'failed' | 'cancelled';
+        createdAt?: Date;
+        updatedAt?: Date;
+    };
+
+    export type UserPaymentOrdersCreationAttributes = Optional<
+        UserPaymentOrdersAttributes,
+        'id' | 'providerMetadata' | 'providerAttemptsSync' | 'amount' | 'shippingCost' | 'description' | 'createdAt' | 'updatedAt'
+    >;
+
+    // ----------------- Sequelize core -----------------
     export const sequelize: Sequelize;
     export const Sequelize: typeof import("sequelize");
 
+    // ----------------- Sequelize Models -----------------
     export const User: typeof Model & {
-        new (values?: Partial<UserAttributes>, options?: any): Model<UserAttributes, UserCreationAttributes>;
+        new (
+            values?: Partial<UserAttributes>,
+            options?: any
+        ): Model<UserAttributes, UserCreationAttributes>;
     };
 
     export const UserDomain: typeof Model & {
-        new (values?: Partial<UserDomainAttributes>, options?: any): Model<UserDomainAttributes, UserDomainCreationAttributes>;
+        new (
+            values?: Partial<UserDomainAttributes>,
+            options?: any
+        ): Model<UserDomainAttributes, UserDomainCreationAttributes>;
     };
 
     export const PaymentMethod: typeof Model & {
@@ -82,11 +116,19 @@ declare module "@config/database/models" {
 
         findAll<T extends boolean = false>(
             options?: FindOptions & { raw?: T }
-        ): Promise<T extends true ? PaymentMethodAttributes[] : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>[]>;
+        ): Promise<
+            T extends true
+                ? PaymentMethodAttributes[]
+                : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>[]
+        >;
 
         findOne<T extends boolean = false>(
             options?: FindOptions & { raw?: T }
-        ): Promise<T extends true ? PaymentMethodAttributes | null : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes> | null>;
+        ): Promise<
+            T extends true
+                ? PaymentMethodAttributes | null
+                : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes> | null
+        >;
     };
 
     export const UserPaymentMethod: typeof Model & {
@@ -97,11 +139,42 @@ declare module "@config/database/models" {
 
         findAll<T extends boolean = false>(
             options?: FindOptions & { raw?: T }
-        ): Promise<T extends true ? UserPaymentMethodAttributes[] : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes>[]>;
+        ): Promise<
+            T extends true
+                ? UserPaymentMethodAttributes[]
+                : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes>[]
+        >;
 
         findOne<T extends boolean = false>(
             options?: FindOptions & { raw?: T }
-        ): Promise<T extends true ? UserPaymentMethodAttributes | null : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes> | null>;
+        ): Promise<
+            T extends true
+                ? UserPaymentMethodAttributes | null
+                : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes> | null
+        >;
+    };
+
+    export const UserPaymentOrders: typeof Model & {
+        new (
+            values?: Partial<UserPaymentOrdersAttributes>,
+            options?: any
+        ): Model<UserPaymentOrdersAttributes, UserPaymentOrdersCreationAttributes>;
+
+        findAll<T extends boolean = false>(
+            options?: FindOptions & { raw?: T }
+        ): Promise<
+            T extends true
+                ? UserPaymentOrdersAttributes[]
+                : Model<UserPaymentOrdersAttributes, UserPaymentOrdersCreationAttributes>[]
+        >;
+
+        findOne<T extends boolean = false>(
+            options?: FindOptions & { raw?: T }
+        ): Promise<
+            T extends true
+                ? UserPaymentOrdersAttributes | null
+                : Model<UserPaymentOrdersAttributes, UserPaymentOrdersCreationAttributes> | null
+        >;
     };
 
     // ----------------- db object -----------------
@@ -109,43 +182,11 @@ declare module "@config/database/models" {
         sequelize: Sequelize;
         Sequelize: typeof import("sequelize");
 
-        User: typeof Model & {
-            new (values?: Partial<UserAttributes>, options?: any): Model<UserAttributes, UserCreationAttributes>;
-        };
-
-        UserDomain: typeof Model & {
-            new (values?: Partial<UserDomainAttributes>, options?: any): Model<UserDomainAttributes, UserDomainCreationAttributes>;
-        };
-
-        PaymentMethod: typeof Model & {
-            new (
-                values?: Partial<PaymentMethodAttributes>,
-                options?: any
-            ): Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>;
-
-            findAll<T extends boolean = false>(
-                options?: FindOptions & { raw?: T }
-            ): Promise<T extends true ? PaymentMethodAttributes[] : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>[]>;
-
-            findOne<T extends boolean = false>(
-                options?: FindOptions & { raw?: T }
-            ): Promise<T extends true ? PaymentMethodAttributes | null : Model<PaymentMethodAttributes, PaymentMethodCreationAttributes> | null>;
-        };
-
-        UserPaymentMethod: typeof Model & {
-            new (
-                values?: Partial<UserPaymentMethodAttributes>,
-                options?: any
-            ): Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes>;
-
-            findAll<T extends boolean = false>(
-                options?: FindOptions & { raw?: T }
-            ): Promise<T extends true ? UserPaymentMethodAttributes[] : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes>[]>;
-
-            findOne<T extends boolean = false>(
-                options?: FindOptions & { raw?: T }
-            ): Promise<T extends true ? UserPaymentMethodAttributes | null : Model<UserPaymentMethodAttributes, UserPaymentMethodCreationAttributes> | null>;
-        };
+        User: typeof User;
+        UserDomain: typeof UserDomain;
+        PaymentMethod: typeof PaymentMethod;
+        UserPaymentMethod: typeof UserPaymentMethod;
+        UserPaymentOrders: typeof UserPaymentOrders;
     }
 
     const db: DB;

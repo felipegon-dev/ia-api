@@ -6,11 +6,11 @@ export enum PaymentType {
 }
 
 export interface PaymentParameters {
-    description: string;
     cartItems: CartItems[];
     paymentToken: string,
     cancelUrl: string,
-    requestId?: string;
+    returnUrl?: string,
+    host: string,
 }
 
 export interface CartItems {
@@ -22,10 +22,13 @@ export interface CartItems {
 }
 
 export interface PaymentRequestInterface {
-    getPaymentUrl(): Promise<string>;
+    createOrder(): Promise<void>;
+    getResultRedirectUrl(): Promise<string>;
     setParameters(paymentParams: PaymentParameters): void;
+    getOrderId(): string;
+    getMetadata(): string;
 }
 
 
-export interface PaymentResponseInterface {
+export interface PaymentSyncInterface {
 }

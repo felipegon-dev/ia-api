@@ -18,9 +18,11 @@ export interface PaypalCredentials {
 }
 
 export class PaypalRequest implements PaymentRequestInterface {
-    private paymentUrl: string | null = null;
+    private resultRedirectUrl: string | null = null;
     private paymentParams: PaymentParameters | null = null;
     private credentials: PaypalCredentials | null = null;
+    private orderId: string | null = null;
+    private metadata: string | null = null;
 
 
     /** Solo guarda los parámetros y descifra el token */
@@ -33,16 +35,15 @@ export class PaypalRequest implements PaymentRequestInterface {
     }
 
     /** Devuelve la URL de pago, creando la orden si no existe */
-    public async getPaymentUrl(): Promise<string> {
-        await this.createOrder();
+    public async getResultRedirectUrl(): Promise<string> {
+        if (!this.resultRedirectUrl) throw new ValidationError('Payment URL not initialized');
+        if (!this.orderId) throw new ValidationError('Order has not processed yet');
 
-        if (!this.paymentUrl) throw new ValidationError('Payment URL not initialized');
-
-        return this.paymentUrl;
+        return this.resultRedirectUrl;
     }
 
     /** Crear la orden en PayPal */
-    private async createOrder(): Promise<void> {
+    public async createOrder(): Promise<void> {
         if (!this.paymentParams || !this.credentials) {
             throw new PaymentError('Payment parameters or credentials not set');
         }
@@ -50,10 +51,21 @@ export class PaypalRequest implements PaymentRequestInterface {
         try {
             const accessToken = await this.generateAccessToken();
             const response = await this.createPaypalOrder(accessToken);
-            this.paymentUrl = this.extractApprovalUrl(response);
+            this.resultRedirectUrl = this.extractApprovalUrl(response);
+            this.orderId = response.data.id;
+            this.metadata = JSON.stringify(response.data);
         } catch (err) {
             throw new PaymentError('Failed to create PayPal order: ' + (err as Error).message);
         }
+    }
+
+    getOrderId(): string {
+        if (!this.orderId) throw new ValidationError('Order ID not available');
+        return this.orderId;
+    }
+    getMetadata(): string {
+        if (!this.metadata) throw new ValidationError('Metadata not available');
+        return this.metadata;
     }
 
     private setCredentials(paymentParams: PaymentParameters) {
@@ -107,7 +119,6 @@ export class PaypalRequest implements PaymentRequestInterface {
         const items = this.convert2PaypalItems();
         const currency = this.getCurrency();
         const totalAmount = this.getAmount();
-        const description = this.paymentParams!.description
 
         try {
             return await axios.post(
@@ -116,7 +127,7 @@ export class PaypalRequest implements PaymentRequestInterface {
                     intent: 'CAPTURE',
                     purchase_units: [
                         {
-                            description,
+                            description: this.paymentParams?.host,
                             amount: {
                                 currency_code: currency,
                                 value: totalAmount,
@@ -128,17 +139,13 @@ export class PaypalRequest implements PaymentRequestInterface {
                                 },
                             },
                             items,
-                            custom_id: JSON.stringify({
-                                paymentType: PaymentType.PAYPAL,
-                                requestId: this.paymentParams?.requestId
-                            }),
                         },
                     ],
                         application_context: {
                             return_url: SHARED_URLS.PAYMENT_CALLBACK_FULL,
                             cancel_url: this.paymentParams?.cancelUrl,
                             user_action: 'PAY_NOW',
-                            brand_name: 'Your App Name',
+                            brand_name: this.paymentParams?.host,
                         },
                 },
                 {

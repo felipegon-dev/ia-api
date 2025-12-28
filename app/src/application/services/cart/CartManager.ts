@@ -1,25 +1,22 @@
-import { ValidationError } from "@application/errors/ValidationError";
-import { CartItems, PaymentType } from "@application/services/payment/Payment";
-import { PaymentMethodAttributes, UserExtended, UserPaymentMethodAttributes } from "@apptypes/UserExtended";
-import UserData from "@application/services/base/UserData";
-import Url from "@application/util/Url";
+import { CartItems } from "@application/services/payment/Payment";
+import {  UserExtended } from "@apptypes/UserExtended";
 
+
+/**
+ * Aim: Validate payment method and cart items.
+ * Provide necessary data for payment processing
+ */
 export class CartManager {
-    private dbItems: any[] = [];
     private cartItems: CartItems[] = [];
     private userExtended: UserExtended | null = null;
-    private userPaymentMethodAttributes: UserPaymentMethodAttributes | null = null;
 
-    constructor(private userData: UserData, private url: Url) {}
 
     // =====================
     // Public methods
     // =====================
-    public async get(userExtended: UserExtended, cartItems: CartItems[], paymentType: PaymentType): Promise<CartManager> {
+    public async get(userExtended: UserExtended, cartItems: CartItems[]): Promise<CartManager> {
         this.userExtended = userExtended;
-        await this.setPaymentMethodAttributes(paymentType);
         await this.setCartItems(cartItems);
-        await this.setRequest();
 
         return this;
     }
@@ -33,61 +30,20 @@ export class CartManager {
     }
 
     public getDescription(): string {
-        return "test description"; // could not be empty!
+        return "test description"; // todo; text from the user
     }
 
-    public getCartItems(): CartItems[] {
+    public getCartItems() {
         return this.cartItems;
     }
 
-    public getPaymentToken(): string {
-        if (!this.userPaymentMethodAttributes?.paymentToken) {
-            throw new ValidationError("Payment token is not set");
-        }
-        return this.userPaymentMethodAttributes.paymentToken;
-    }
-
-    public getPaymentType(): PaymentType {
-        if (!this.userPaymentMethodAttributes?.paymentMethod?.code) {
-            throw new ValidationError("Payment type is not set");
-        }
-        return this.userPaymentMethodAttributes.paymentMethod.code as PaymentType;
-    }
-
-    public getCancelUrl(): string {
-        const cancelUrl = this.userData.get().lastUrl || this.userData.get().host;
-        if (!cancelUrl) {
-            throw new ValidationError("Cancel URL is not set");
-        }
-        return this.url.removeParamsFromUrl(cancelUrl);
-    }
-
-    getRequestId() {
-        // todo obtaing the request from object property
-        return new Date().getTime().toString();
+    public getCartItemsJson(): string {
+        return '';
     }
 
     // =====================
     // Private methods
     // =====================
-    private async setPaymentMethodAttributes(paymentType: PaymentType): Promise<void> {
-        const user = this.requireUser();
-
-        if (!user.userPaymentMethods || user.userPaymentMethods.length === 0) {
-            throw new ValidationError("User payment methods not loaded");
-        }
-
-        const paymentTypeDb = user.userPaymentMethods
-            .filter((upm): upm is UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes } => !!upm.paymentMethod)
-            .find(upm => upm.paymentMethod!.code === paymentType);
-
-        if (!paymentTypeDb || paymentTypeDb.status !== "active" || !paymentTypeDb.paymentToken) {
-            throw new ValidationError("Invalid payment method for user");
-        }
-
-        this.userPaymentMethodAttributes = paymentTypeDb!;
-    }
-
     private async setCartItems(cartItems: CartItems[]): Promise<void> {
         // todo: validation of cart items structure
         // todo: elastic search find items
@@ -105,16 +61,5 @@ export class CartManager {
 
     private getCartItemsFromDatabase(userId: string, items: any[]): any[] {
         return [];
-    }
-
-    private requireUser(): UserExtended {
-        if (!this.userExtended) {
-            throw new ValidationError("User is not set");
-        }
-        return this.userExtended;
-    }
-
-    private async setRequest() {
-        // todo save into the db the request with cart items, user id, total amount, currency, status, etc.
     }
 }

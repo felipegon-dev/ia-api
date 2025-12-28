@@ -7,8 +7,11 @@ import Url from "@application/util/Url";
 import PaymentRepository from "@domain/repository/PaymentRepository";
 import { PaymentFactory } from "@application/services/payment/PaymentFactory";
 import { CartManager } from "@application/services/cart/CartManager";
-import { PaypalResponse } from "@application/services/payment/paypal/PaypalResponse";
+import { PaypalSync } from "@application/services/payment/paypal/PaypalSync";
 import { PaypalRequest } from "@application/services/payment/paypal/PaypalRequest";
+import {PaymentManager} from "@application/services/payment/PaymentManager";
+import UserPaymentOrdersRepository from "@domain/repository/UserPaymentOrdersRepository";
+import {AddressManager} from "@application/services/user/AddressManager";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -23,9 +26,15 @@ export class Container {
     }
 
     private register(): void {
+        this.registerRepositories();
         this.registerBaseServices();
         this.registerUserServices();
         this.registerPaymentServices();
+    }
+
+    private registerRepositories(): void {
+        this.instances.set(UserRepository, new UserRepository());
+        this.instances.set(UserPaymentOrdersRepository, new UserPaymentOrdersRepository());
     }
 
     // --------------------
@@ -34,7 +43,6 @@ export class Container {
     private registerBaseServices(): void {
         this.instances.set(UserData, new UserData());
         this.instances.set(Url, new Url());
-        this.instances.set(UserRepository, new UserRepository());
         this.instances.set(Token, new Token(this.get(UserData)));
     }
 
@@ -50,6 +58,7 @@ export class Container {
                 this.get(Url)
             )
         );
+        this.instances.set(AddressManager, new AddressManager());
     }
 
     // --------------------
@@ -57,24 +66,23 @@ export class Container {
     // --------------------
     private registerPaymentServices(): void {
         this.instances.set(PaymentRepository, new PaymentRepository());
-        this.instances.set(PaypalResponse, new PaypalResponse());
+        this.instances.set(PaypalSync, new PaypalSync());
         this.instances.set(PaypalRequest, new PaypalRequest());
 
         this.instances.set(
             PaymentFactory,
             new PaymentFactory(
                 this.get(PaypalRequest),
-                this.get(PaypalResponse)
+                this.get(PaypalSync)
             )
         );
 
-        this.instances.set(
-            CartManager,
-            new CartManager(
-                this.get(UserData),
-                this.get(Url)
-            )
-        );
+        this.instances.set(CartManager, new CartManager());
+        this.instances.set(PaymentManager, new PaymentManager(
+            this.instances.get(UserData),
+            this.instances.get(Url),
+            this.instances.get(UserPaymentOrdersRepository)
+        ));
     }
 
     public get<T>(Service: Constructor<T>): T {

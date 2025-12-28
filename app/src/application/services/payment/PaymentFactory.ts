@@ -1,16 +1,20 @@
-import {PaymentRequestInterface, PaymentResponseInterface, PaymentType} from "@application/services/payment/Payment";
+import {
+    PaymentRequestInterface,
+    PaymentSyncInterface,
+    PaymentType
+} from "@application/services/payment/Payment";
 import {PaypalRequest} from "@application/services/payment/paypal/PaypalRequest";
-import {PaypalResponse} from "@application/services/payment/paypal/PaypalResponse";
+import {PaypalSync} from "@application/services/payment/paypal/PaypalSync";
 
 export class PaymentFactory {
 
     constructor(
         private paypalRequest: PaypalRequest,
-        private paypalResponse: PaypalResponse
+        private paypalSync: PaypalSync
     ) {
     }
 
-    getRequest(type: PaymentType): PaymentRequestInterface {
+    getProviderRequest(type: PaymentType): PaymentRequestInterface {
         switch (type) {
             case PaymentType.PAYPAL:
                 return this.paypalRequest;
@@ -19,12 +23,17 @@ export class PaymentFactory {
         }
     }
 
-    getResponse(type: PaymentType): PaymentResponseInterface {
+    getProviderSync(type: PaymentType): PaymentSyncInterface {
         switch (type) {
             case PaymentType.PAYPAL:
-                return this.paypalResponse;
+                return this.paypalSync;
             default:
                 throw new Error(`Unsupported payment method: ${type}`);
         }
+    }
+
+    getProviderCallback(type: PaymentType): PaymentSyncInterface {
+        // todo
+         throw new Error(`Unsupported payment method: ${type}`);
     }
 }
