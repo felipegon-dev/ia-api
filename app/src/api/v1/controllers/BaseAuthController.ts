@@ -1,6 +1,6 @@
 import { Request } from 'express';
-import Token from '@application/services/base/Token';
-import UserDomainValidation from "@application/services/user/UserDomainValidation";
+import Token from '@src/services/base/Token';
+import UserDomainValidation from "@src/services/user/UserDomainValidation";
 import {UserExtended} from "@apptypes/UserExtended";
 
 export class BaseAuthController {

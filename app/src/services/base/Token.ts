@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { UnauthorizedError } from "@application/errors/UnauthorizedError";
+import { UnauthorizedError } from "@src/errors/UnauthorizedError";
 import { HEADERS } from "@config/constants/headers";
-import UserData, { UserDataPayload } from "@application/services/base/UserData";
-import { Crypt } from "@application/services/base/Crypt";
+import UserData, { UserDataPayload } from "@src/services/base/UserData";
+import { Crypt } from "@src/services/base/Crypt";
 
 // @ts-ignore
-import type { TokenPayload } from '@application/services/base/TokenPayload';
-import {ValidationError} from "@application/errors/ValidationError";
+import type { TokenPayload } from '@src/services/base/TokenPayload';
+import {ValidationError} from "@src/errors/ValidationError";
 
 /**
  * 1- SPA -> generar token API

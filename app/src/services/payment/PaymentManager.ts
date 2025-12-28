@@ -1,9 +1,9 @@
 import {PaymentMethodAttributes, UserExtended, UserPaymentMethodAttributes} from "@apptypes/UserExtended";
-import {PaymentType} from "@application/services/payment/Payment";
-import {ValidationError} from "@application/errors/ValidationError";
-import UserData from "@application/services/base/UserData";
-import Url from "@application/util/Url";
-import UserPaymentOrdersRepository from "@domain/repository/UserPaymentOrdersRepository";
+import {PaymentType} from "@src/services/payment/Payment";
+import {ValidationError} from "@src/errors/ValidationError";
+import UserData from "@src/services/base/UserData";
+import Url from "@src/util/Url";
+import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 
 export class PaymentManager {
     private userPaymentMethod: (UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes; }) | undefined = undefined;
@@ -95,7 +95,6 @@ export class PaymentManager {
     }
 
     getUserPaymentMethodId(): number {
-        console.log(this.userPaymentMethod)
         if (!this.userPaymentMethod?.id) throw new ValidationError("User payment method is not set");
         return this.userPaymentMethod.id
     }

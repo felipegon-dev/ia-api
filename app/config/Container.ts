@@ -1,17 +1,17 @@
-import Token from "@application/services/base/Token";
-import { ValidationError } from "@application/errors/ValidationError";
-import UserData from "@application/services/base/UserData";
-import UserRepository from "@domain/repository/UserRepository";
-import UserDomainValidation from "@application/services/user/UserDomainValidation";
-import Url from "@application/util/Url";
-import PaymentRepository from "@domain/repository/PaymentRepository";
-import { PaymentFactory } from "@application/services/payment/PaymentFactory";
-import { CartManager } from "@application/services/cart/CartManager";
-import { PaypalSync } from "@application/services/payment/paypal/PaypalSync";
-import { PaypalRequest } from "@application/services/payment/paypal/PaypalRequest";
-import {PaymentManager} from "@application/services/payment/PaymentManager";
-import UserPaymentOrdersRepository from "@domain/repository/UserPaymentOrdersRepository";
-import {AddressManager} from "@application/services/user/AddressManager";
+import Token from "@src/services/base/Token";
+import { ValidationError } from "@src/errors/ValidationError";
+import UserData from "@src/services/base/UserData";
+import UserRepository from "@config/database/repository/UserRepository";
+import UserDomainValidation from "@src/services/user/UserDomainValidation";
+import Url from "@src/util/Url";
+import PaymentRepository from "@config/database/repository/PaymentRepository";
+import { PaymentFactory } from "@src/services/payment/PaymentFactory";
+import { CartManager } from "@src/services/cart/CartManager";
+import { PaypalSync } from "@src/services/payment/paypal/PaypalSync";
+import { PaypalRequest } from "@src/services/payment/paypal/PaypalRequest";
+import {PaymentManager} from "@src/services/payment/PaymentManager";
+import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
+import {AddressManager} from "@src/services/user/AddressManager";
 
 type Constructor<T> = new (...args: any[]) => T;
 

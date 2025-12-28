@@ -1,7 +1,7 @@
 import { Express, Request, Response } from 'express';
 import {v1ApiRoutes, container } from '@config/v1.api.routes';
 import { catchAsync } from './error-handler';
-import {NotFoundError} from "@application/errors/NotFoundError";
+import {NotFoundError} from "@src/errors/NotFoundError";
 
 export function initRoutesApi(app: Express) {
     v1ApiRoutes.forEach(route => {

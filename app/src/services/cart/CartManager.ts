@@ -1,4 +1,4 @@
-import { CartItems } from "@application/services/payment/Payment";
+import { CartItems } from "@src/services/payment/Payment";
 import {  UserExtended } from "@apptypes/UserExtended";
 
 

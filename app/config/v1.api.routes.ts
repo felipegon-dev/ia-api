@@ -1,14 +1,14 @@
-import { UserController } from '@application/api/v1/controllers/UserController';
-import { SpaTokenController } from '@application/api/v1/controllers/SpaTokenController';
+import { UserController } from '@src/api/v1/controllers/UserController';
+import { SpaTokenController } from '@src/api/v1/controllers/SpaTokenController';
 import { Container } from '@config/Container';
-import Token from "@application/services/base/Token";
-import UserDomainValidation from "@application/services/user/UserDomainValidation";
-import {PaymentController} from "@application/api/v1/controllers/PaymentController";
-import {CartManager} from "@application/services/cart/CartManager";
-import {PaymentFactory} from "@application/services/payment/PaymentFactory";
+import Token from "@src/services/base/Token";
+import UserDomainValidation from "@src/services/user/UserDomainValidation";
+import {PaymentController} from "@src/api/v1/controllers/PaymentController";
+import {CartManager} from "@src/services/cart/CartManager";
+import {PaymentFactory} from "@src/services/payment/PaymentFactory";
 import {SHARED_URLS} from "@config/constants/sharedUrls";
-import {AddressManager} from "@application/services/user/AddressManager";
-import {PaymentManager} from "@application/services/payment/PaymentManager";
+import {AddressManager} from "@src/services/user/AddressManager";
+import {PaymentManager} from "@src/services/payment/PaymentManager";
 
 export const container = new Container();
 

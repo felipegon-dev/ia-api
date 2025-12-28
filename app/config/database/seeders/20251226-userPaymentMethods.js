@@ -1,7 +1,6 @@
 'use strict';
 
 require('dotenv').config(); // <-- Esto carga el .env
-console.log(process.cwd())
 const { Crypt } = require('/usr/src/app/src/application/services/base/Crypt.ts');
 
 module.exports = {

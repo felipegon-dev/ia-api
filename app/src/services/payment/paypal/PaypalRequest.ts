@@ -4,11 +4,11 @@ import {
     PaymentRequestInterface,
     PaymentParameters,
     PaymentType
-} from "@application/services/payment/Payment";
+} from "@src/services/payment/Payment";
 import {PAYPAL_API_URLS, PAYPAL_ENDPOINTS} from "./PaypalUrls";
-import {Crypt} from "@application/services/base/Crypt";
-import {ValidationError} from "@application/errors/ValidationError";
-import {PaymentError} from "@application/errors/PaymentError";
+import {Crypt} from "@src/services/base/Crypt";
+import {ValidationError} from "@src/errors/ValidationError";
+import {PaymentError} from "@src/errors/PaymentError";
 import {SHARED_URLS} from "@config/constants/sharedUrls";
 import {isProductionMode} from "@config/constants/AppMode";
 

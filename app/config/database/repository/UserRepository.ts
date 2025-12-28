@@ -1,5 +1,5 @@
 import db from "@config/database/models";
-import {UserStatus} from "@domain/vo/UserStatus";
+import {UserStatus} from "@config/database/vo/UserStatus";
 import {UserExtended} from "@apptypes/UserExtended";
 
 export default class UserRepository {

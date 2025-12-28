@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { BaseAuthController } from '@application/api/v1/controllers/BaseAuthController';
-import { toUserDTO, UserDTO } from '@application/api/v1/response/dto/UserDTO';
+import { BaseAuthController } from '@src/api/v1/controllers/BaseAuthController';
+import { toUserDTO, UserDTO } from '@src/api/v1/response/dto/UserDTO';
 import { UserExtended } from '@apptypes/UserExtended';
 
 export class UserController extends BaseAuthController {

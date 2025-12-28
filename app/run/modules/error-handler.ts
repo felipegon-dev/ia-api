@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '@application/errors/AppError';
+import { AppError } from '@src/errors/AppError';
 import {isDevelopmentMode} from "@config/constants/AppMode";
 
 

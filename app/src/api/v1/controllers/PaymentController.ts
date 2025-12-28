@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import Token from "@application/services/base/Token";
-import {CartManager} from "@application/services/cart/CartManager";
-import {PaymentFactory} from "@application/services/payment/PaymentFactory";
-import {BaseAuthController} from "@application/api/v1/controllers/BaseAuthController";
-import UserDomainValidation from "@application/services/user/UserDomainValidation";
-import {AddressManager} from "@application/services/user/AddressManager";
-import {PaymentManager} from "@application/services/payment/PaymentManager";
+import Token from "@src/services/base/Token";
+import {CartManager} from "@src/services/cart/CartManager";
+import {PaymentFactory} from "@src/services/payment/PaymentFactory";
+import {BaseAuthController} from "@src/api/v1/controllers/BaseAuthController";
+import UserDomainValidation from "@src/services/user/UserDomainValidation";
+import {AddressManager} from "@src/services/user/AddressManager";
+import {PaymentManager} from "@src/services/payment/PaymentManager";
 
 export class PaymentController extends BaseAuthController{
 

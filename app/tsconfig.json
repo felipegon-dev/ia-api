@@ -10,12 +10,10 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@application/*": ["src/application/*"],
+      "@src/*": ["src/*"],
       "@config/*": ["config/*"],
       "@run/*": ["run/*"],
-      "@domain/*": ["src/domain/*"],
       "@apptypes/*": ["src/types/*"],
-      "@infrastructure/*": ["src/infrastructure/*"]
     },
     "outDir": "dist"
   },

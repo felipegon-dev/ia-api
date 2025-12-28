@@ -1,8 +1,8 @@
-import UserRepository from "@domain/repository/UserRepository";
+import UserRepository from "@config/database/repository/UserRepository";
 import { Request } from 'express';
-import UserData from "@application/services/base/UserData";
-import {UserError} from "@application/errors/UserError";
-import Url from "@application/util/Url";
+import UserData from "@src/services/base/UserData";
+import {UserError} from "@src/errors/UserError";
+import Url from "@src/util/Url";
 import {UserExtended} from "@apptypes/UserExtended";
 
 export default class UserDomainValidation {

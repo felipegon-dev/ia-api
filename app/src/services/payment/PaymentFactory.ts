@@ -2,9 +2,9 @@ import {
     PaymentRequestInterface,
     PaymentSyncInterface,
     PaymentType
-} from "@application/services/payment/Payment";
-import {PaypalRequest} from "@application/services/payment/paypal/PaypalRequest";
-import {PaypalSync} from "@application/services/payment/paypal/PaypalSync";
+} from "@src/services/payment/Payment";
+import {PaypalRequest} from "@src/services/payment/paypal/PaypalRequest";
+import {PaypalSync} from "@src/services/payment/paypal/PaypalSync";
 
 export class PaymentFactory {
 

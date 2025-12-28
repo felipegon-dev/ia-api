@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import {BaseAuthController} from "@application/api/v1/controllers/BaseAuthController";
+import {BaseAuthController} from "@src/api/v1/controllers/BaseAuthController";
 /**
  * Access without authentication to get a token for SPA apps
  */
