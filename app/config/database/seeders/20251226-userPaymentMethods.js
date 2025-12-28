@@ -1,7 +1,7 @@
 'use strict';
 
-require('dotenv').config(); // <-- Esto carga el .env
-const { Crypt } = require('/usr/src/app/src/application/services/base/Crypt.ts');
+require('dotenv').config({ path: '/usr/src/app/.env' }); // <-- Esto carga el .env
+const { Crypt } = require('/usr/src/app/src/services/base/Crypt.ts');
 
 module.exports = {
     async up(queryInterface, Sequelize) {

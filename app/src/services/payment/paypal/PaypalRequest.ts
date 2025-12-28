@@ -142,7 +142,7 @@ export class PaypalRequest implements PaymentRequestInterface {
                         },
                     ],
                         application_context: {
-                            return_url: SHARED_URLS.PAYMENT_CALLBACK_FULL,
+                            return_url: this.paymentParams?.returnUrl,
                             cancel_url: this.paymentParams?.cancelUrl,
                             user_action: 'PAY_NOW',
                             brand_name: this.paymentParams?.host,

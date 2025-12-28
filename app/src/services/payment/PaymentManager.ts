@@ -72,6 +72,7 @@ export class PaymentManager {
 
     async saveOrder(param: {
         userPaymentMethodId: number;
+        userDomainId: number,
         providerId: string;
         providerMetadata: string;
         cartItems: string;
@@ -83,6 +84,7 @@ export class PaymentManager {
     }) {
         await this.userPaymentOrdersRepository.create({
             userPaymentMethodId: param.userPaymentMethodId,
+            userDomainId: param.userDomainId,
             providerId: param.providerId,
             providerMetadata: param.providerMetadata,
             cartItems: param.cartItems,

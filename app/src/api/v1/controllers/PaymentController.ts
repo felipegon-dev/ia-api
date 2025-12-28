@@ -6,6 +6,7 @@ import {BaseAuthController} from "@src/api/v1/controllers/BaseAuthController";
 import UserDomainValidation from "@src/services/user/UserDomainValidation";
 import {AddressManager} from "@src/services/user/AddressManager";
 import {PaymentManager} from "@src/services/payment/PaymentManager";
+import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
 
 export class PaymentController extends BaseAuthController{
 
@@ -31,7 +32,7 @@ export class PaymentController extends BaseAuthController{
             cartItems: cartManager.getCartItems(),
             paymentToken: paymentManager.getPaymentToken(),
             cancelUrl: paymentManager.getCancelUrl(),
-            returnUrl: paymentManager.getCancelUrl(),
+            returnUrl: paymentManager.getReturnUrl(),
             host: paymentManager.getHost(),
         });
 
@@ -39,12 +40,13 @@ export class PaymentController extends BaseAuthController{
 
         await paymentManager.saveOrder({
             userPaymentMethodId: paymentManager.getUserPaymentMethodId(),
+            userDomainId: this.userDomainValidation.getDomainId(),
             providerId: providerRequest.getOrderId(),
             providerMetadata: providerRequest.getMetadata(),
             cartItems: cartManager.getCartItemsJson(),
             addressItems: addressManager.getAddressItemsJson(),
             amount: cartManager.getAmount(),
-            status: 'pending', // the order is pending until confirmed with sync or callback
+            status: UserPaymentOrderStatus.PENDING.Value, // the order is pending until confirmed with sync or callback
             shippingCost: addressManager.getShippingCost(),
             description: cartManager.getDescription(),
         });

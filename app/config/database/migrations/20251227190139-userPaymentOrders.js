@@ -20,6 +20,15 @@ module.exports = {
         },
       },
 
+      userDomainId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'userDomains',
+          key: 'id'
+        },
+      },
+
       providerId: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -91,6 +100,7 @@ module.exports = {
 
     // Opcional: índice por userPaymentMethodId para consultas rápidas
     await queryInterface.addIndex('userPaymentOrders', ['userPaymentMethodId']);
+    await queryInterface.addIndex('userPaymentOrders', ['userDomainId']);
   },
 
   async down(queryInterface, Sequelize) {

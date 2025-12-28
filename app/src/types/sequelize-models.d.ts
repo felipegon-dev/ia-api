@@ -71,6 +71,7 @@ declare module "@config/database/models" {
     export type UserPaymentOrdersAttributes = {
         id: number;
         userPaymentMethodId: number;
+        userDomainId: number,
         providerId: string;
         providerMetadata?: string;
         providerAttemptsSync?: ProviderSyncAttempt[] | null;
