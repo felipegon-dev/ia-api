@@ -9,15 +9,15 @@ import { PaymentFactory } from "@src/services/payment/PaymentFactory";
 import { CartManager } from "@src/services/cart/CartManager";
 import { PaypalSync } from "@src/services/payment/paypal/PaypalSync";
 import { PaypalRequest } from "@src/services/payment/paypal/PaypalRequest";
-import {PaymentManager} from "@src/services/payment/PaymentManager";
+import { PaymentManager } from "@src/services/payment/PaymentManager";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
-import {AddressManager} from "@src/services/user/AddressManager";
+import { AddressManager } from "@src/services/user/AddressManager";
+import { ShippingManager } from "@src/services/user/ShippingManager";
+import { PaymentControllerInjection } from "@src/api/v1/injection/PaymentControllerInjection";
+import { PaymentControllerValidation } from "@src/api/v1/validation/PaymentControllerValidation";
 
 type Constructor<T> = new (...args: any[]) => T;
 
-/**
- * IMPORTANT: All classes need to be registered here
- */
 export class Container {
     private instances = new Map<Constructor<any>, any>();
 
@@ -30,11 +30,13 @@ export class Container {
         this.registerBaseServices();
         this.registerUserServices();
         this.registerPaymentServices();
+        this.registerControllerIngestion();
     }
 
     private registerRepositories(): void {
         this.instances.set(UserRepository, new UserRepository());
         this.instances.set(UserPaymentOrdersRepository, new UserPaymentOrdersRepository());
+        this.instances.set(PaymentRepository, new PaymentRepository());
     }
 
     // --------------------
@@ -59,13 +61,13 @@ export class Container {
             )
         );
         this.instances.set(AddressManager, new AddressManager());
+        this.instances.set(ShippingManager, new ShippingManager());
     }
 
     // --------------------
     // Payment services
     // --------------------
     private registerPaymentServices(): void {
-        this.instances.set(PaymentRepository, new PaymentRepository());
         this.instances.set(PaypalSync, new PaypalSync());
         this.instances.set(PaypalRequest, new PaypalRequest());
 
@@ -78,11 +80,35 @@ export class Container {
         );
 
         this.instances.set(CartManager, new CartManager());
-        this.instances.set(PaymentManager, new PaymentManager(
-            this.instances.get(UserData),
-            this.instances.get(Url),
-            this.instances.get(UserPaymentOrdersRepository)
-        ));
+        this.instances.set(
+            PaymentManager,
+            new PaymentManager(
+                this.get(UserData),
+                this.get(Url),
+                this.get(UserPaymentOrdersRepository)
+            )
+        );
+
+        this.instances.set(PaymentControllerValidation, new PaymentControllerValidation());
+    }
+
+    // --------------------
+    // Controllers ingestion
+    // --------------------
+    private registerControllerIngestion(): void {
+        this.instances.set(
+            PaymentControllerInjection,
+            new PaymentControllerInjection(
+                this.get(Token),
+                this.get(UserDomainValidation),
+                this.get(CartManager),
+                this.get(PaymentFactory),
+                this.get(AddressManager),
+                this.get(PaymentManager),
+                this.get(ShippingManager),
+                this.get(PaymentControllerValidation)
+            )
+        );
     }
 
     public get<T>(Service: Constructor<T>): T {
