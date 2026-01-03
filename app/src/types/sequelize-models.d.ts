@@ -178,6 +178,58 @@ declare module "@config/database/models" {
         >;
     };
 
+    // ----------------- DomainPreferences -----------------
+    export type DomainPreferencesAttributes = {
+        id: number;
+        userDomainId: number;
+        changeAddressUrl?: string | null;
+        template?: string | null;
+        googleFeedUrl?: string | null;
+        createdAt?: Date;
+        updatedAt?: Date;
+    };
+
+    export type DomainPreferencesCreationAttributes = Optional<
+        DomainPreferencesAttributes,
+        "id" | "changeAddressUrl" | "template" | "googleFeedUrl" | "createdAt" | "updatedAt"
+    >;
+
+    export const DomainPreferences: typeof Model & {
+        new (
+            values?: Partial<DomainPreferencesAttributes>,
+            options?: any
+        ): Model<DomainPreferencesAttributes, DomainPreferencesCreationAttributes>;
+    };
+
+    // ----------------- DomainShipping -----------------
+    export type DomainShippingAttributes = {
+        id: number;
+        userDomainId: number;
+        name: string;
+        code: string;
+        price: number;
+        currency: string;
+        deliveryTimeDescription?: string | null;
+        freeShippingFrom?: number | null;
+        active: boolean;
+        defaultMethod: boolean;
+        createdAt?: Date;
+        updatedAt?: Date;
+    };
+
+    export type DomainShippingCreationAttributes = Optional<
+        DomainShippingAttributes,
+        "id" | "deliveryTimeDescription" | "freeShippingFrom" | "createdAt" | "updatedAt"
+    >;
+
+    export const DomainShipping: typeof Model & {
+        new (
+            values?: Partial<DomainShippingAttributes>,
+            options?: any
+        ): Model<DomainShippingAttributes, DomainShippingCreationAttributes>;
+    };
+
+
     // ----------------- db object -----------------
     export interface DB {
         sequelize: Sequelize;
@@ -185,10 +237,13 @@ declare module "@config/database/models" {
 
         User: typeof User;
         UserDomain: typeof UserDomain;
+        DomainPreferences: typeof DomainPreferences;
+        DomainShipping: typeof DomainShipping;
         PaymentMethod: typeof PaymentMethod;
         UserPaymentMethod: typeof UserPaymentMethod;
         UserPaymentOrders: typeof UserPaymentOrders;
     }
+
 
     const db: DB;
     export default db;

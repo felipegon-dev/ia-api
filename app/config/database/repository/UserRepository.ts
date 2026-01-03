@@ -30,7 +30,19 @@ export default class UserRepository {
             include: [
                 {
                     model: db.UserDomain,
-                    as: 'domains'
+                    as: 'domains',
+                    include: [
+                        {
+                            model: db.DomainPreferences,
+                            as: 'preferences'
+                        },
+                        {
+                            model: db.DomainShipping,
+                            as: 'shippingMethods',
+                            where: { active: true },
+                            required: false // 🔑 importante para no romper si no hay envíos
+                        }
+                    ]
                 },
                 {
                     model: db.UserPaymentMethod,
@@ -48,6 +60,4 @@ export default class UserRepository {
 
         return result as UserExtended | null;
     }
-
-
 }

@@ -47,6 +47,20 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'userId',
             as: 'user'
         });
+
+        UserDomain.hasOne(models.DomainPreferences, {
+            foreignKey: 'userDomainId',
+            as: 'preferences',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        });
+
+        UserDomain.hasMany(models.DomainShipping, {
+            foreignKey: 'userDomainId',
+            as: 'shippingMethods',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        });
     };
 
     return UserDomain;
