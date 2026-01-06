@@ -25,6 +25,8 @@ declare module "@config/database/models" {
         domain: string;
         createdAt?: Date;
         updatedAt?: Date;
+        preferences?: DomainPreferencesAttributes;
+        shippingMethods?: DomainShippingAttributes[];
     };
 
     export type UserDomainCreationAttributes = Optional<

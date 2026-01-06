@@ -1,5 +1,5 @@
 import { Model } from 'sequelize';
-import { UserDomainAttributes } from './UserDomainAttributes';
+import {UserDomainAttributes} from "@config/database/models";
 
 /* =========================
    PaymentMethod (parcial)

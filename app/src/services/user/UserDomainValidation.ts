@@ -5,7 +5,7 @@ import {UserError} from "@src/errors/UserError";
 import Url from "@src/util/Url";
 import {UserExtended} from "@apptypes/UserExtended";
 import {ValidationError} from "@src/errors/ValidationError";
-import {UserDomainAttributes} from "@apptypes/UserDomainAttributes";
+import {UserDomainAttributes} from "@config/database/models";
 
 export default class UserDomainValidation {
 
@@ -56,5 +56,13 @@ export default class UserDomainValidation {
     getDomain(): string {
         if (!this.userDomain) throw new ValidationError('domain not set');
         return this.userDomain.domain;
+    }
+
+    getUserDomain(): UserDomainAttributes {
+        if (this.userDomain) {
+            return this.userDomain;
+        }
+        throw new ValidationError('user domain not set')
+
     }
 }
