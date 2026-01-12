@@ -184,7 +184,6 @@ declare module "@config/database/models" {
     export type DomainPreferencesAttributes = {
         id: number;
         userDomainId: number;
-        changeAddressUrl?: string | null;
         template?: string | null;
         googleFeedUrl?: string | null;
         createdAt?: Date;
@@ -193,7 +192,7 @@ declare module "@config/database/models" {
 
     export type DomainPreferencesCreationAttributes = Optional<
         DomainPreferencesAttributes,
-        "id" | "changeAddressUrl" | "template" | "googleFeedUrl" | "createdAt" | "updatedAt"
+        "id" | "template" | "googleFeedUrl" | "createdAt" | "updatedAt"
     >;
 
     export const DomainPreferences: typeof Model & {
