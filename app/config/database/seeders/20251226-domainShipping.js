@@ -10,6 +10,7 @@ module.exports = {
             'domainShipping',
             [
                 {
+                    id: 1,
                     userDomainId: 1,
                     name: 'Express',
                     code: 'EXPRESS',
@@ -23,6 +24,7 @@ module.exports = {
                     updatedAt: now,
                 },
                 {
+                    id: 2,
                     userDomainId: 1,
                     name: 'Standard',
                     code: 'STANDARD',

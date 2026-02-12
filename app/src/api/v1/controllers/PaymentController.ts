@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { BaseAuthController } from "@src/api/v1/controllers/BaseAuthController";
 import { UserPaymentOrderStatus } from "@config/database/vo/UserPaymentOrderStatus";
 import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControllerInjection";
+
 export class PaymentController extends BaseAuthController {
 
     private readonly inject: PaymentControllerInjection;
@@ -29,9 +30,10 @@ export class PaymentController extends BaseAuthController {
             currency: cartManager.getCurrency(),
             amount: cartManager.getAmount(),
             paymentToken: paymentManager.getPaymentToken(),
-            cancelUrl: paymentManager.getCancelUrl(),
-            returnUrl: paymentManager.getReturnUrl(),
+            cancelUrl: paymentManager.getCancelUrl(paymentManager.getPaymentType()),
+            returnUrl: paymentManager.getReturnUrl(paymentManager.getPaymentType()),
             host: paymentManager.getHost(),
+            callbackUrl: paymentManager.getCallbackUrl()
         });
 
         await providerRequest.createOrder();
@@ -49,18 +51,29 @@ export class PaymentController extends BaseAuthController {
             description: req.body.description,
         });
 
+        const baseUrl = await providerRequest.getResultRedirectUrl();
+        const method = paymentManager.getPaymentType();
+        const separator = baseUrl.includes('?') ? '&' : '?';
+
         res.status(200).json({
             success: true,
-            data: await providerRequest.getResultRedirectUrl()
+            data: `${baseUrl}${separator}method=${encodeURIComponent(method)}`,
         });
+
     };
 
     callbackPayment = async (req: Request, res: Response) => {
-        console.log("===== PayPal Callback Received =====");
-        console.log("Full request body:", JSON.stringify(req.body, null, 2));
-        res.status(200).send('OK');
+        console.log(JSON.stringify(req.body, null, 2))
+
+        const callback = this.inject.paymentFactory.getProviderCallback(req.body);
+        const paymentStatus = await callback.getPaymentStatus();
+        if (paymentStatus.status === UserPaymentOrderStatus.COMPLETED) {
+            await this.inject.paymentManager.updateOrderStatus(paymentStatus.order, UserPaymentOrderStatus.COMPLETED);
+        }
+        res.status(200).json({success: true});
     };
 
+    // todo only paypal for now
     syncPayment = async (req: Request, res: Response) => {
         console.log("===== PayPal SYNC Received =====");
         console.log("Full request body:", JSON.stringify(req.body, null, 2));

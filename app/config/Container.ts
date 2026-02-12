@@ -15,6 +15,9 @@ import { AddressManager } from "@src/services/user/AddressManager";
 import { ShippingManager } from "@src/services/user/ShippingManager";
 import { PaymentControllerInjection } from "@src/api/v1/injection/PaymentControllerInjection";
 import { PaymentControllerValidation } from "@src/api/v1/validation/PaymentControllerValidation";
+import {Transfer} from "@src/services/payment/transfer/Transfer";
+import {RedSysRequest} from "@src/services/payment/redsys/RedSysRequest";
+import {RedSysCallback} from "@src/services/payment/redsys/RedSysCallback";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -70,12 +73,18 @@ export class Container {
     private registerPaymentServices(): void {
         this.instances.set(PaypalSync, new PaypalSync());
         this.instances.set(PaypalRequest, new PaypalRequest());
+        this.instances.set(Transfer, new Transfer());
+        this.instances.set(RedSysRequest, new RedSysRequest());
+        this.instances.set(RedSysCallback, new RedSysCallback(this.instances.get(PaymentRepository)));
 
         this.instances.set(
             PaymentFactory,
             new PaymentFactory(
                 this.get(PaypalRequest),
-                this.get(PaypalSync)
+                this.get(PaypalSync),
+                this.get(Transfer),
+                this.get(RedSysRequest),
+                this.get(RedSysCallback)
             )
         );
 
@@ -85,7 +94,8 @@ export class Container {
             new PaymentManager(
                 this.get(UserData),
                 this.get(Url),
-                this.get(UserPaymentOrdersRepository)
+                this.get(UserPaymentOrdersRepository),
+                this.get(PaymentRepository)
             )
         );
 

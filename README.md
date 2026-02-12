@@ -37,3 +37,7 @@ Tech NodeJs
 | **Alipay**                                  | China / Asia     | No                                     | Chinese digital wallet; backend creates orders using merchant ID                        | Yes                            | Yes                                | Widely used in China                                   |
 | **WeChat Pay**                              | China / Asia     | No                                     | Digital wallet integrated into WeChat                                                   | Yes                            | Yes                                | Widely used in China                                   |
 | **Stripe**                                  | Worldwide        | Yes (API keys per merchant)            | Merchant provides API keys; backend creates payments and receives webhooks              | Yes                            | Yes                                | Simplifies card and wallet payments (Apple/Google Pay) |
+
+
+### Test Redsys
+`ngrok http https://localhost:8000`

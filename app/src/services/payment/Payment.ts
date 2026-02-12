@@ -1,9 +1,11 @@
 import {Currency} from "@config/database/vo/Currency";
+import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
 
 export enum PaymentType {
     PAYPAL = 'paypal',
-    REDSYS = 'redsys',
+    CARD = 'card',
     BIZUM = 'bizum',
+    TRANSFER = 'transfer',
 }
 
 export interface PaymentParameters {
@@ -14,6 +16,7 @@ export interface PaymentParameters {
     cancelUrl: string,
     returnUrl?: string,
     host: string,
+    callbackUrl: string
 }
 
 export interface CartItems {
@@ -25,11 +28,21 @@ export interface CartItems {
 }
 
 export interface PaymentRequestInterface {
-    createOrder(): Promise<void>;
+    createOrder(): void;
     getResultRedirectUrl(): Promise<string>;
     setParameters(paymentParams: PaymentParameters): void;
     getOrderId(): string;
     getMetadata(): string;
+}
+
+export interface PaymentCallbackResult {
+    order: string,
+    amount: number,
+    responseCode: string,
+    status: UserPaymentOrderStatus,
+}
+export interface PaymentCallbackInterface {
+    getPaymentStatus(): Promise<PaymentCallbackResult>;
 }
 
 export interface PaymentSyncInterface {

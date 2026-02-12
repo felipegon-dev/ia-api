@@ -4,6 +4,10 @@ import {ValidationError} from "@src/errors/ValidationError";
 import UserData from "@src/services/base/UserData";
 import Url from "@src/util/Url";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
+import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
+import PaymentRepository from "@config/database/repository/PaymentRepository";
+import {isDevelopmentMode} from "@config/constants/AppMode";
+import {CALL_BACK_BASE_URL_DEV, CALL_BACK_PATH} from "@config/v1.api.routes";
 
 export class PaymentManager {
     private userPaymentMethod: (UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes; }) | undefined = undefined;
@@ -11,7 +15,8 @@ export class PaymentManager {
     constructor(
         private userData: UserData,
         private url: Url,
-        private userPaymentOrdersRepository: UserPaymentOrdersRepository
+        private userPaymentOrdersRepository: UserPaymentOrdersRepository,
+        private paymentRepo: PaymentRepository
     ) {}
 
     public get(user: UserExtended, paymentType: PaymentType): PaymentManager
@@ -24,7 +29,7 @@ export class PaymentManager {
             .filter((upm): upm is UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes } => !!upm.paymentMethod)
             .find(upm => upm.paymentMethod!.code === paymentType);
 
-        if (!userPaymentMethod || userPaymentMethod.status !== "active" || !userPaymentMethod.paymentToken) {
+        if (!userPaymentMethod || userPaymentMethod.status !== "active") {
             throw new ValidationError("Invalid payment method for user");
         }
 
@@ -33,10 +38,7 @@ export class PaymentManager {
     }
 
     public getPaymentToken(): string {
-        if (!this.userPaymentMethod?.paymentToken) {
-            throw new ValidationError("Payment token is not set");
-        }
-        return this.userPaymentMethod.paymentToken;
+        return this.userPaymentMethod?.paymentToken as string;
     }
 
     public getPaymentType(): PaymentType {
@@ -46,20 +48,20 @@ export class PaymentManager {
         return this.userPaymentMethod.paymentMethod.code as PaymentType;
     }
 
-    public getCancelUrl(): string {
+    public getCancelUrl(paymentType: PaymentType): string {
         const cancelUrl = this.userData.get().lastUrl || this.userData.get().host;
         if (!cancelUrl) {
             throw new ValidationError("Cancel URL is not set");
         }
-        return this.url.removeParamsFromUrl(cancelUrl + '?cancel=true');
+        return this.url.removeParamsFromUrl(cancelUrl + '?method='+paymentType+'&cancel=true');
     }
 
-    public getReturnUrl() {
+    public getReturnUrl(paymentType: PaymentType) {
         const returnUrl = this.userData.get().lastUrl || this.userData.get().host;
         if (!returnUrl) {
             throw new ValidationError("Return URL is not set");
         }
-        return this.url.removeParamsFromUrl(returnUrl + '?success=true');
+        return this.url.removeParamsFromUrl(returnUrl + '?method='+paymentType+'&success=true');
     }
 
     public getHost(): string {
@@ -70,7 +72,7 @@ export class PaymentManager {
         return host;
     }
 
-    async saveOrder(param: {
+    public async saveOrder(param: {
         userPaymentMethodId: number;
         userDomainId: number,
         providerId: string;
@@ -96,8 +98,24 @@ export class PaymentManager {
         })
     }
 
-    getUserPaymentMethodId(): number {
+    public getUserPaymentMethodId(): number {
         if (!this.userPaymentMethod?.id) throw new ValidationError("User payment method is not set");
         return this.userPaymentMethod.id
+    }
+
+    public async updateOrderStatus(order: string, userPaymentOrderStatus: UserPaymentOrderStatus): Promise<void> {
+        this.paymentRepo.updateOrderStatus(order, userPaymentOrderStatus.Value);
+    }
+
+    public getCallbackUrl(): string {
+        let baseUrl = '';
+        if (isDevelopmentMode) {
+            baseUrl = CALL_BACK_BASE_URL_DEV;
+        } else {
+            baseUrl = process.env.VITE_API_URL as string;
+        }
+
+        return baseUrl+CALL_BACK_PATH;
+
     }
 }

@@ -16,6 +16,9 @@ export interface RouteConfig {
     requires?: any[];         // Dependencias / middlewares
 }
 
+export const CALL_BACK_PATH = '/api/v1/payment/callback';
+export const CALL_BACK_BASE_URL_DEV = 'https://ungraved-intercoracoid-christoper.ngrok-free.dev';
+
 export const v1ApiRoutes: RouteConfig[] = [
     {
         controller: UserController,
@@ -39,7 +42,7 @@ export const v1ApiRoutes: RouteConfig[] = [
     {
         controller: PaymentController,
         method: 'callbackPayment',
-        path: '/api/v1/payment/sync',
+        path: CALL_BACK_PATH,
         requires: [PaymentControllerInjection],
         httpMethod: 'post'
     }
