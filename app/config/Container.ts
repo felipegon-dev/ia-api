@@ -13,11 +13,15 @@ import { PaymentManager } from "@src/services/payment/PaymentManager";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 import { AddressManager } from "@src/services/user/AddressManager";
 import { ShippingManager } from "@src/services/user/ShippingManager";
+import DomainShippingRepository from "@config/database/repository/DomainShippingRepository";
 import { PaymentControllerInjection } from "@src/api/v1/injection/PaymentControllerInjection";
 import { PaymentControllerValidation } from "@src/api/v1/validation/PaymentControllerValidation";
 import {Transfer} from "@src/services/payment/transfer/Transfer";
 import {RedSysRequest} from "@src/services/payment/redsys/RedSysRequest";
 import {RedSysCallback} from "@src/services/payment/redsys/RedSysCallback";
+import RedisManager from "@src/services/queue/RedisManager";
+import PostPayment from "@src/events/PostPayment";
+import CallbackPayment from "@src/events/CallbackPayment";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -40,6 +44,7 @@ export class Container {
         this.instances.set(UserRepository, new UserRepository());
         this.instances.set(UserPaymentOrdersRepository, new UserPaymentOrdersRepository());
         this.instances.set(PaymentRepository, new PaymentRepository());
+        this.instances.set(DomainShippingRepository, new DomainShippingRepository());
     }
 
     // --------------------
@@ -49,6 +54,7 @@ export class Container {
         this.instances.set(UserData, new UserData());
         this.instances.set(Url, new Url());
         this.instances.set(Token, new Token(this.get(UserData)));
+        this.instances.set(RedisManager, new RedisManager());
     }
 
     // --------------------
@@ -64,7 +70,7 @@ export class Container {
             )
         );
         this.instances.set(AddressManager, new AddressManager());
-        this.instances.set(ShippingManager, new ShippingManager());
+        this.instances.set(ShippingManager, new ShippingManager(this.get(DomainShippingRepository)));
     }
 
     // --------------------
@@ -100,6 +106,9 @@ export class Container {
         );
 
         this.instances.set(PaymentControllerValidation, new PaymentControllerValidation());
+
+        this.instances.set(PostPayment, new PostPayment(this.get(PaymentManager)));
+        this.instances.set(CallbackPayment, new CallbackPayment(this.get(PaymentManager)));
     }
 
     // --------------------
@@ -116,7 +125,8 @@ export class Container {
                 this.get(AddressManager),
                 this.get(PaymentManager),
                 this.get(ShippingManager),
-                this.get(PaymentControllerValidation)
+                this.get(PaymentControllerValidation),
+                this.get(RedisManager)
             )
         );
     }

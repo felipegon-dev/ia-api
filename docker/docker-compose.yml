@@ -14,6 +14,21 @@ services:
     networks:
       - ia-manager
 
+  ia-worker:
+    container_name: ia-worker
+    build:
+      context: ../../ia-api/docker
+      dockerfile: dev.worker.Dockerfile
+    restart: always
+    volumes:
+      - ../../ia-api/app:/usr/src/app
+    extra_hosts:
+      - "test-site.com:172.19.0.1"
+      - "www.latiendanautica.es:172.19.0.1"
+      - "latiendanautica.es:172.19.0.1"
+    networks:
+      - ia-manager
+
   ia-api-migrations:
     container_name: ia-api-migrations
     build:

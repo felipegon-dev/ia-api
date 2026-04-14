@@ -61,6 +61,13 @@ module.exports = (sequelize, DataTypes) => {
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });
+
+        UserDomain.hasMany(models.UserPaymentOrders, {
+            foreignKey: 'userDomainId',
+            as: 'paymentOrders',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        });
     };
 
     return UserDomain;

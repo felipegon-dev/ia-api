@@ -1,6 +1,6 @@
 import db, {
     UserPaymentOrdersCreationAttributes,
-    UserPaymentOrdersAttributes
+    UserPaymentOrdersAttributes, UserPaymentOrderWithDomain
 } from "@config/database/models";
 
 export default class UserPaymentOrdersRepository {
@@ -37,10 +37,19 @@ export default class UserPaymentOrdersRepository {
     /**
      * Buscar una orden por ID del provider (PayPal order id, etc.)
      */
-    public async findByProviderId(providerId: string) {
+    public async findByProviderId(providerId: string): Promise<UserPaymentOrderWithDomain | null> {
         return this.UserPaymentOrders.findOne({
             where: { providerId },
-        });
+            include: [
+                {
+                    model: db.UserDomain,
+                    as: 'userDomain',
+                    include: [
+                        { model: db.DomainPreferences, as: 'preferences' }
+                    ]
+                }
+            ]
+        }) as Promise<UserPaymentOrderWithDomain | null>;
     }
 
     /**

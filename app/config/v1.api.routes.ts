@@ -45,5 +45,12 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: CALL_BACK_PATH,
         requires: [PaymentControllerInjection],
         httpMethod: 'post'
+    },
+    {
+        controller: PaymentController,
+        method: 'validateCallbackPayment',
+        path: '/api/v1/payment/callback/validate',
+        requires: [PaymentControllerInjection],
+        httpMethod: 'post'
     }
 ];

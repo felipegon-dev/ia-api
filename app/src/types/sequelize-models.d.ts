@@ -185,6 +185,7 @@ declare module "@config/database/models" {
         id: number;
         userDomainId: number;
         template?: string | null;
+        callbackPaymentsUrl?: string | null;
         googleFeedUrl?: string | null;
         createdAt?: Date;
         updatedAt?: Date;
@@ -192,7 +193,7 @@ declare module "@config/database/models" {
 
     export type DomainPreferencesCreationAttributes = Optional<
         DomainPreferencesAttributes,
-        "id" | "template" | "googleFeedUrl" | "createdAt" | "updatedAt"
+        "id" | "template" | "callbackPaymentsUrl" | "googleFeedUrl" | "createdAt" | "updatedAt"
     >;
 
     export const DomainPreferences: typeof Model & {
@@ -244,6 +245,22 @@ declare module "@config/database/models" {
         UserPaymentMethod: typeof UserPaymentMethod;
         UserPaymentOrders: typeof UserPaymentOrders;
     }
+
+    export type UserPaymentOrderWithDomain = Model<UserPaymentOrdersAttributes> & {
+        providerMetadata: string;
+        cartItems: string;
+        addressItems: string;
+        amount: number;
+        shippingDetails: string;
+        description: string;
+        createdAt: Date;
+        userDomain?: {
+            domain: string;
+            preferences?: {
+                callbackPaymentsUrl?: string | null;
+            };
+        };
+    };
 
 
     const db: DB;

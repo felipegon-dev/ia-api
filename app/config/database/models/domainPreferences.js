@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
                 comment: 'Domain owner of the customer (FK → userDomains.id). Example: 1',
             },
 
+            callbackPaymentsUrl: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
             template: {
                 type: DataTypes.STRING,
                 allowNull: true,

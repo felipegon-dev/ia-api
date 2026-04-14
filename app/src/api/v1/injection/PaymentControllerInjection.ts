@@ -6,6 +6,7 @@ import { AddressManager } from "@src/services/user/AddressManager";
 import { PaymentManager } from "@src/services/payment/PaymentManager";
 import { ShippingManager } from "@src/services/user/ShippingManager";
 import { PaymentControllerValidation } from "@src/api/v1/validation/PaymentControllerValidation";
+import RedisManager from "@src/services/queue/RedisManager";
 
 export class PaymentControllerInjection {
     constructor(
@@ -16,6 +17,7 @@ export class PaymentControllerInjection {
         public readonly addressManager: AddressManager,
         public readonly paymentManager: PaymentManager,
         public readonly shippingManager: ShippingManager,
-        public readonly paymentControllerValidation: PaymentControllerValidation
+        public readonly paymentControllerValidation: PaymentControllerValidation,
+        public readonly redisManager: RedisManager
     ) {}
 }

@@ -134,7 +134,6 @@ export class RedSysRequest implements PaymentRequestInterface {
         try {
             const decrypted = crypt.decrypt(paymentParams.paymentToken);
             const parsed = JSON.parse(decrypted);
-            console.log('request parsed token:', parsed)
 
             if (!parsed.merchantCode || !parsed.secretKey) {
                 throw new ValidationError('Invalid RedSys credentials');
@@ -163,7 +162,6 @@ export class RedSysRequest implements PaymentRequestInterface {
             DS_MERCHANT_URLOK: this.paymentParams!.returnUrl!,
             DS_MERCHANT_URLKO: this.paymentParams!.cancelUrl,
             DS_MERCHANT_MERCHANTNAME: this.paymentParams!.host,
-            DS_MERCHANT_PAYMENT_TOKEN: this.paymentParams?.paymentToken as string
         };
     }
 
@@ -196,7 +194,7 @@ export class RedSysRequest implements PaymentRequestInterface {
     private encodeMerchantParameters(params: Record<string, string>): string {
         return Buffer
             .from(JSON.stringify(params))
-            .toString('base64');
+            .toString('base64url');
     }
 
     private sign(merchantParameters: string): string {
@@ -230,7 +228,9 @@ export class RedSysRequest implements PaymentRequestInterface {
         return crypto
             .createHmac('sha256', keyOrder)
             .update(merchantParameters)
-            .digest('base64');
+            .digest('base64')
+            // .replace(/\+/g, '-')
+            // .replace(/\//g, '_')
     }
 
     /**

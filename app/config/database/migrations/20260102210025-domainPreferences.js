@@ -21,7 +21,10 @@ module.exports = {
         onUpdate: 'CASCADE',
         comment: 'Domain owner of the customer (FK → userDomains.id). Example: 1',
       },
-
+      callbackPaymentsUrl: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       template: {
         type: Sequelize.STRING,
         allowNull: true

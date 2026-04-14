@@ -9,6 +9,21 @@ import PaymentRepository from "@config/database/repository/PaymentRepository";
 import {isDevelopmentMode} from "@config/constants/AppMode";
 import {CALL_BACK_BASE_URL_DEV, CALL_BACK_PATH} from "@config/v1.api.routes";
 
+export interface ProviderMetadata {
+    Ds_SignatureVersion: string;
+    Ds_MerchantParameters: string;
+}
+
+export interface CallBackData {
+    callbackUrl: string;
+    providerMetadata: any;
+    cartItems: any;
+    addressItems: any;
+    amount: number;
+    shippingDetails: any;
+    description: string;
+    createdAt: Date;
+}
 export class PaymentManager {
     private userPaymentMethod: (UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes; }) | undefined = undefined;
 
@@ -53,7 +68,7 @@ export class PaymentManager {
         if (!cancelUrl) {
             throw new ValidationError("Cancel URL is not set");
         }
-        return this.url.removeParamsFromUrl(cancelUrl + '?method='+paymentType+'&cancel=true');
+        return this.url.removeParamsFromUrl(cancelUrl) + '?method='+paymentType+'&cancel=true';
     }
 
     public getReturnUrl(paymentType: PaymentType) {
@@ -61,7 +76,7 @@ export class PaymentManager {
         if (!returnUrl) {
             throw new ValidationError("Return URL is not set");
         }
-        return this.url.removeParamsFromUrl(returnUrl + '?method='+paymentType+'&success=true');
+        return this.url.removeParamsFromUrl(returnUrl) + '?method='+paymentType+'&success=true';
     }
 
     public getHost(): string {
@@ -84,7 +99,7 @@ export class PaymentManager {
         shippingDetails: string;
         description: string
     }) {
-        await this.userPaymentOrdersRepository.create({
+        return await this.userPaymentOrdersRepository.create({
             userPaymentMethodId: param.userPaymentMethodId,
             userDomainId: param.userDomainId,
             providerId: param.providerId,
@@ -118,4 +133,93 @@ export class PaymentManager {
         return baseUrl+CALL_BACK_PATH;
 
     }
+
+    async getOrderWithDomainInfo(orderId: string): Promise<CallBackData> {
+        const userPaymentOrder = await this.userPaymentOrdersRepository.findByProviderId(orderId);
+        if (!userPaymentOrder) {
+            throw new ValidationError(`Order with providerId ${orderId} not found`);
+        }
+
+        const userDomain = userPaymentOrder.userDomain;
+        if (!userDomain) {
+            throw new Error('UserDomain not found for this order');
+        }
+
+        const domain = userDomain.domain;
+        const callbackPaymentsUrl = userDomain.preferences?.callbackPaymentsUrl ?? null;
+
+        if (null === callbackPaymentsUrl) {
+            throw new ValidationError(`Callback payments URL not set for domain ${domain}`);
+        }
+
+        return {
+            callbackUrl: this.buildCallbackUrl(domain, callbackPaymentsUrl),
+            providerMetadata: userPaymentOrder.providerMetadata ? JSON.parse(userPaymentOrder.providerMetadata) : null,
+            cartItems: userPaymentOrder.cartItems ? JSON.parse(userPaymentOrder.cartItems) : null,
+            addressItems: userPaymentOrder.addressItems ? JSON.parse(userPaymentOrder.addressItems) : null,
+            amount: userPaymentOrder.amount,
+            shippingDetails: userPaymentOrder.shippingDetails ? JSON.parse(userPaymentOrder.shippingDetails) : null,
+            description: userPaymentOrder.description,
+            createdAt: userPaymentOrder.createdAt
+        }
+    }
+
+    private buildCallbackUrl(domain: string, callbackPaymentsUrl: string): string {
+        const normalizedDomain = domain.startsWith('http')
+            ? domain
+            : `https://${domain}`;
+
+        let url: URL;
+
+        try {
+            if (callbackPaymentsUrl.startsWith('http')) {
+                // URL completa
+                url = new URL(callbackPaymentsUrl);
+            } else if (callbackPaymentsUrl.startsWith(':')) {
+                // puerto + path  -> example.com:8000/test
+                url = new URL(normalizedDomain);
+                const match = callbackPaymentsUrl.match(/^:(\d+)(\/.*)?$/);
+
+                if (!match) {
+                    throw new Error(`Invalid port format: ${callbackPaymentsUrl}`);
+                }
+
+                url.port = match[1];
+                url.pathname = match[2] || '/';
+            } else {
+                // path normal
+                url = new URL(callbackPaymentsUrl, normalizedDomain);
+            }
+        } catch {
+            throw new Error(`Invalid callback URL: ${normalizedDomain} + ${callbackPaymentsUrl}`);
+        }
+
+        if (url.protocol !== 'https:') {
+            throw new Error(`Callback URL must use HTTPS: ${url.toString()}`);
+        }
+
+        return url.toString();
+    }
+
+    async validateProviderMetadata(providerId: string, providerMetadata: ProviderMetadata): Promise<void> {
+        if (!providerMetadata) {
+            throw new ValidationError(`Provider metadata is not set for providerId ${providerId}`);
+        }
+
+        await this.userPaymentOrdersRepository.findByProviderId(providerId).then(order => {
+            if (null === order) {
+                throw new ValidationError(`Order with providerId ${providerId} not found`);
+            }
+
+            const dbMetadata: ProviderMetadata = JSON.parse(order.providerMetadata);
+
+            if (
+                dbMetadata.Ds_SignatureVersion !== providerMetadata.Ds_SignatureVersion ||
+                dbMetadata.Ds_MerchantParameters !== providerMetadata.Ds_MerchantParameters
+            ) {
+                throw new ValidationError(`Provider metadata does not match for providerId ${providerId}`);
+            }
+        });
+    }
+
 }
