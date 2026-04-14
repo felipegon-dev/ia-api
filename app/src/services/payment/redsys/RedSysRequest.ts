@@ -194,7 +194,7 @@ export class RedSysRequest implements PaymentRequestInterface {
     private encodeMerchantParameters(params: Record<string, string>): string {
         return Buffer
             .from(JSON.stringify(params))
-            .toString('base64url');
+            .toString('base64');
     }
 
     private sign(merchantParameters: string): string {
