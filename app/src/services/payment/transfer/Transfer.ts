@@ -3,15 +3,17 @@ import {PaymentParameters, PaymentRequestInterface, PaymentType} from "@src/serv
 export class Transfer implements PaymentRequestInterface {
     private paymentParams: PaymentParameters | null = null;
 
+    private orderId: string | null = null;
+
     createOrder(): void {
-        // nothing
+        this.orderId = this.getOrderId();
     }
 
     async getResultRedirectUrl(): Promise<string> {
         if (!this.paymentParams?.returnUrl) {
             throw new Error('returnUrl no está definido');
         }
-        return this.paymentParams.returnUrl;
+        return this.paymentParams.returnUrl + '&providerId=' + this.getOrderId();
     }
 
     getMetadata(): string {
@@ -32,10 +34,6 @@ export class Transfer implements PaymentRequestInterface {
         const mm = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
 
-        // microsegundos simulados (0–999999)
-        const micro = Math.floor(performance.now() * 1000) % 1_000_000;
-        const microStr = micro.toString().padStart(6, '0');
-
-        return `${yy}${MM}${dd}${hh}${mm}${ss}${microStr}`;
+        return `${yy}${MM}${dd}${hh}${mm}${ss}`;
     }
 }
