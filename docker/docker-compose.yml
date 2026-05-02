@@ -6,9 +6,9 @@ services:
       dockerfile: dev.Dockerfile
     restart: always
     ports:
-      - "3000:3000"
+      - "3000:80" # 3000 for postman testing, 80 for production
     environment:
-      PORT: 3000
+      PORT: 80
       NODE_ENV: development
       REDIS_HOST: ia-redis-checkout
     volumes:
@@ -42,6 +42,8 @@ services:
       - ../../ia-api/app:/usr/src/app
     depends_on:
       - ia-api
+    env_file:
+      - ../../ia-api/app/.env
     networks:
       - traefik_vps_net
 
@@ -54,5 +56,7 @@ services:
       - ../../ia-api/app:/usr/src/app
     depends_on:
       - ia-api
+    env_file:
+      - ../../ia-api/app/.env
     networks:
       - traefik_vps_net

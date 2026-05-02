@@ -18,5 +18,5 @@ RUN npm ci --omit=dev
 COPY --from=builder /usr/src/app/dist ./dist
 # Copiar entrypoint de producción
 COPY app/run/www.prod.js ./run/www.prod.js
-EXPOSE 3000
+EXPOSE 80
 CMD ["npm", "run", "prod"]
