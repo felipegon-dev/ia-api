@@ -1,6 +1,6 @@
 'use strict';
 
-const { Currency } = require('/usr/src/app/config/database/vo/Currency.ts'); // ajusta path según tu proyecto
+const { Currency } = require('../vo/Currency');
 
 module.exports = (sequelize, DataTypes) => {
     const DomainShipping = sequelize.define(

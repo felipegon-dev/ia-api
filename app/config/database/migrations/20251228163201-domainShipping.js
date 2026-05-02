@@ -1,6 +1,5 @@
 'use strict';
 
-const { Currency } = require('/usr/src/app/config/database/vo/Currency.ts'); // ajusta path según tu proyecto
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -48,7 +47,7 @@ module.exports = {
       currency: {
         type: Sequelize.STRING(3),
         allowNull: false,
-        defaultValue: Currency.EUR().value, // <-- aquí usamos el VO
+        defaultValue: 'EUR', // Currency code ISO 4217
         comment: 'Currency code. Example: "EUR", "USD"',
       },
 

@@ -2,16 +2,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 import EventData, {EventType} from "@src/services/queue/EventData";
+
 import {container} from '@config/v1.api.routes';
 import PostPayment from "@src/events/PostPayment";
 import {WorkerError} from "@src/errors/WorkerError";
 import CallbackPayment from "@src/events/CallbackPayment";
 
-require('ts-node').register({
-    transpileOnly: true,
-    project: path.join(__dirname, '../tsconfig.json'),
-});
-require('tsconfig-paths/register');
 
 const RedisManager = require('@src/services/queue/RedisManager').default;
 

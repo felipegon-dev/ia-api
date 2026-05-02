@@ -1,6 +1,6 @@
 services:
   ia-api:
-    container_name: ia-api
+    container_name: ia-api-checkout
     build:
       context: ../../ia-api/docker
       dockerfile: dev.Dockerfile
@@ -9,28 +9,32 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
+      NODE_ENV: development
+      REDIS_HOST: ia-redis-checkout
     volumes:
       - ../../ia-api/app:/usr/src/app
     networks:
-      - ia-manager
+      - traefik_vps_net
 
   ia-worker:
-    container_name: ia-worker
+    container_name: ia-worker-checkout
     build:
       context: ../../ia-api/docker
       dockerfile: dev.worker.Dockerfile
     restart: always
     volumes:
       - ../../ia-api/app:/usr/src/app
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: ia-redis
     extra_hosts:
-      - "test-site.com:172.19.0.1"
       - "www.latiendanautica.es:172.19.0.1"
       - "latiendanautica.es:172.19.0.1"
     networks:
-      - ia-manager
+      - traefik_vps_net
 
   ia-api-migrations:
-    container_name: ia-api-migrations
+    container_name: ia-api-migrations-checkout
     build:
       context: ../../ia-api/docker
       dockerfile: migrations.Dockerfile
@@ -39,10 +43,10 @@ services:
     depends_on:
       - ia-api
     networks:
-      - ia-manager
+      - traefik_vps_net
 
   ia-api-seeders:
-    container_name: ia-api-seeders
+    container_name: ia-api-seeders-checkout
     build:
       context: ../../ia-api/docker
       dockerfile: seeders.Dockerfile  # puedes crear un Dockerfile específico para seeders si quieres
@@ -51,4 +55,4 @@ services:
     depends_on:
       - ia-api
     networks:
-      - ia-manager
+      - traefik_vps_net

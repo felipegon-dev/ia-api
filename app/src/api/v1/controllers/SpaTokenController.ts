@@ -12,7 +12,16 @@ export class SpaTokenController extends BaseAuthController{
      * @param res
      */
     getToken = async (req: Request, res: Response) => {
-        await this.validateUserDomain(req);
-        res.status(200).json({ success: true, data: this.token.get(req, res)});
+        try {
+            await this.validateUserDomain(req);
+            res.status(200).json({ success: true, data: this.token.get(req, res)});
+        }  catch (error) {
+            console.error('Error in getToken:', error);
+            res.status(500).json({
+                success: false,
+                message: error
+            });
+        }
+
     };
 }
