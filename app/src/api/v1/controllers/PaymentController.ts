@@ -81,7 +81,6 @@ export class PaymentController extends BaseAuthController {
             console.error('Error in postPayment:', error);
             res.status(500).json({
                 success: false,
-                message: 'An error occurred while processing the payment: '+ error
             });
         }
 
@@ -108,7 +107,6 @@ export class PaymentController extends BaseAuthController {
             console.error('Error in callbackPayment:', error);
             res.status(500).json({
                 success: false,
-                message: 'An error occurred while processing the payment: '+ error
             });
         }
     };
@@ -119,9 +117,9 @@ export class PaymentController extends BaseAuthController {
             await this.inject.paymentManager.validateProviderMetadata(req.body.id, req.body.metadata);
             res.status(200).json({success: true});
         } catch (error) {
+            console.error('Error in validateCallbackPayment:', error);
             res.status(500).json({
                 success: false,
-                message: 'An error occurred while validating the payment callback: '+ error
             });
         }
     }
@@ -132,7 +130,6 @@ export class PaymentController extends BaseAuthController {
                 success: false,
                 message: 'Service unavailable. Please try again later.'
             });
-            process.exit(1);
         }
     }
 }

@@ -8,7 +8,7 @@ type XReadGroupResponse = [
 
 const REDIS_DEFAULT_STREAM = 'default_stream';
 const REDIS_DEFAULT_GROUP = 'default_group';
-const REDIS_DEFAULT_EXPIRATION_MESSAGE_TIME = 60 * 1000; // 1 minuto para testing
+const REDIS_DEFAULT_EXPIRATION_MESSAGE_TIME = parseInt(process.env.REDIS_MESSAGE_EXPIRATION_MS || String(60 * 1000), 10);
 const CONSUMER_NAME = 'ia-worker'; // nombre constante de consumidor
 
 class RedisManager {
@@ -18,6 +18,7 @@ class RedisManager {
         const redisOptions: RedisOptions = {
             host: process.env.REDIS_HOST,
             port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            ...(process.env.REDIS_PASSWORD ? { password: process.env.REDIS_PASSWORD } : {}),
             connectTimeout: 5000,
             maxRetriesPerRequest: 1,
         };

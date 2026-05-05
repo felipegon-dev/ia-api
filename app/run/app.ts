@@ -20,9 +20,9 @@ if (isDevelopmentMode) {
 
 // Middlewares
 app.use(logger(isDevelopmentMode ? 'dev' : 'common'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cors()); // todo: origenes solo localhost y ia-apps-api
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: false, limit: '50kb' }));
+app.use(cors());
 
 initRoutesApi(app);
 app.use(errorHandler);
