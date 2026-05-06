@@ -27,7 +27,7 @@ jobs:
 
             # Pull latest code at the released tag
             cd /home/www/ia-checkout/${DIR_NAME_REPO} && \
-            git checkout master && \
+            git checkout main && \
             git pull && \
             git checkout "${{ github.event.release.tag_name }}" && \
 
