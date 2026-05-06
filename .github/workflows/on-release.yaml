@@ -26,16 +26,16 @@ jobs:
             ############################################################
 
             # Pull latest code at the released tag
-            cd /home/www/ia-manager/${DIR_NAME_REPO} && \
+            cd /home/www/ia-checkout/${DIR_NAME_REPO} && \
             git checkout master && \
             git pull && \
             git checkout "${{ github.event.release.tag_name }}" && \
 
             # Pull ia-resources (scripts & TAG_VERSION files)
-            cd /home/www/ia-manager/${DIR_NAME_RESOURCES} && git pull && \
+            cd /home/www/ia-checkout/${DIR_NAME_RESOURCES} && git pull && \
 
             # ── API ────────────────────────────────────────────────────
-            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/api/ && \
+            cd /home/www/ia-checkout/${DIR_NAME_RESOURCES}/production-docker/api/ && \
             echo "TAG_VERSION=ia-api:${{ github.event.release.tag_name }}" > TAG_VERSION && \
             git add TAG_VERSION && \
             git commit -m "release ia-api ${{ github.event.release.tag_name }}" && \
@@ -44,7 +44,7 @@ jobs:
             ./run-api-daemon.sh && \
 
             # ── WORKER ─────────────────────────────────────────────────
-            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/worker/ && \
+            cd /home/www/ia-checkout/${DIR_NAME_RESOURCES}/production-docker/worker/ && \
             echo "TAG_VERSION=ia-worker:${{ github.event.release.tag_name }}" > TAG_VERSION && \
             git add TAG_VERSION && \
             git commit -m "release ia-worker ${{ github.event.release.tag_name }}" && \
@@ -53,7 +53,7 @@ jobs:
             ./run-worker-daemon.sh && \
 
             # ── MIGRATIONS ─────────────────────────────────────────────
-            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/api/ && \
+            cd /home/www/ia-checkout/${DIR_NAME_RESOURCES}/production-docker/api/ && \
             echo "TAG_VERSION=ia-api-migrations:${{ github.event.release.tag_name }}" > TAG_MIGRATIONS_VERSION && \
             git add TAG_MIGRATIONS_VERSION && \
             git commit -m "release ia-api-migrations ${{ github.event.release.tag_name }}" && \
