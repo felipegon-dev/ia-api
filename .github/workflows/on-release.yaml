@@ -1,0 +1,63 @@
+name: Deploy on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Build & deploy ia-api + ia-worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: SSH remote commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            ############################################################
+            DIR_NAME_REPO=ia-api
+            DIR_NAME_RESOURCES=ia-resources
+            ############################################################
+
+            # Pull latest code at the released tag
+            cd /home/www/ia-manager/${DIR_NAME_REPO} && \
+            git checkout master && \
+            git pull && \
+            git checkout "${{ github.event.release.tag_name }}" && \
+
+            # Pull ia-resources (scripts & TAG_VERSION files)
+            cd /home/www/ia-manager/${DIR_NAME_RESOURCES} && git pull && \
+
+            # ── API ────────────────────────────────────────────────────
+            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/api/ && \
+            echo "TAG_VERSION=ia-api:${{ github.event.release.tag_name }}" > TAG_VERSION && \
+            git add TAG_VERSION && \
+            git commit -m "release ia-api ${{ github.event.release.tag_name }}" && \
+            git push && \
+            ./build-api.sh && \
+            ./run-api-daemon.sh && \
+
+            # ── WORKER ─────────────────────────────────────────────────
+            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/worker/ && \
+            echo "TAG_VERSION=ia-worker:${{ github.event.release.tag_name }}" > TAG_VERSION && \
+            git add TAG_VERSION && \
+            git commit -m "release ia-worker ${{ github.event.release.tag_name }}" && \
+            git push && \
+            ./build-worker.sh && \
+            ./run-worker-daemon.sh && \
+
+            # ── MIGRATIONS ─────────────────────────────────────────────
+            cd /home/www/ia-manager/${DIR_NAME_RESOURCES}/production-docker/api/ && \
+            echo "TAG_VERSION=ia-api-migrations:${{ github.event.release.tag_name }}" > TAG_MIGRATIONS_VERSION && \
+            git add TAG_MIGRATIONS_VERSION && \
+            git commit -m "release ia-api-migrations ${{ github.event.release.tag_name }}" && \
+            git push && \
+            ./build-migrations.sh && \
+            ./run-migrations.sh
+
