@@ -22,6 +22,9 @@ import {RedSysCallback} from "@src/services/payment/redsys/RedSysCallback";
 import RedisManager from "@src/services/queue/RedisManager";
 import PostPayment from "@src/events/PostPayment";
 import CallbackPayment from "@src/events/CallbackPayment";
+import UserPaymentMethodRepository from "@config/database/repository/UserPaymentMethodRepository";
+import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
+import { Crypt } from "@src/services/base/Crypt";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -45,6 +48,7 @@ export class Container {
         this.instances.set(UserPaymentOrdersRepository, new UserPaymentOrdersRepository());
         this.instances.set(PaymentRepository, new PaymentRepository());
         this.instances.set(DomainShippingRepository, new DomainShippingRepository());
+        this.instances.set(UserPaymentMethodRepository, new UserPaymentMethodRepository());
     }
 
     // --------------------
@@ -109,6 +113,19 @@ export class Container {
 
         this.instances.set(PostPayment, new PostPayment(this.get(PaymentManager)));
         this.instances.set(CallbackPayment, new CallbackPayment(this.get(PaymentManager)));
+
+        const crypt = new Crypt(
+            process.env.TOKEN_ALGORITHM!,
+            process.env.TOKEN_ENCRYPTION_SECRET!
+        );
+        this.instances.set(
+            UserPaymentMethodFactory,
+            new UserPaymentMethodFactory(
+                this.get(UserPaymentMethodRepository),
+                this.get(UserRepository),
+                crypt
+            )
+        );
     }
 
     // --------------------

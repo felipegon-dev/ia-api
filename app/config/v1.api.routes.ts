@@ -5,6 +5,8 @@ import Token from "@src/services/base/Token";
 import UserDomainValidation from "@src/services/user/UserDomainValidation";
 import {PaymentController} from "@src/api/v1/controllers/PaymentController";
 import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControllerInjection";
+import { UserPaymentMethodController } from "@src/api/v1/controllers/UserPaymentMethodController";
+import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
 
 export const container = new Container();
 
@@ -52,5 +54,27 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/payment/callback/validate',
         requires: [PaymentControllerInjection],
         httpMethod: 'post'
-    }
+    },
+    // ── Admin: payment methods ────────────────────────────────────────────
+    {
+        controller: UserPaymentMethodController,
+        method: 'getPaymentMethods',
+        path: '/api/v1/admin/payment-methods',
+        requires: [UserPaymentMethodFactory],
+        httpMethod: 'get'
+    },
+    {
+        controller: UserPaymentMethodController,
+        method: 'getCredentials',
+        path: '/api/v1/admin/payment-methods/:method',
+        requires: [UserPaymentMethodFactory],
+        httpMethod: 'get'
+    },
+    {
+        controller: UserPaymentMethodController,
+        method: 'saveCredentials',
+        path: '/api/v1/admin/payment-methods/:method',
+        requires: [UserPaymentMethodFactory],
+        httpMethod: 'post'
+    },
 ];
