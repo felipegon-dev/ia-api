@@ -7,6 +7,7 @@ import {PaymentController} from "@src/api/v1/controllers/PaymentController";
 import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControllerInjection";
 import { UserPaymentMethodController } from "@src/api/v1/controllers/UserPaymentMethodController";
 import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
+import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 
 export const container = new Container();
 
@@ -27,6 +28,13 @@ export const v1ApiRoutes: RouteConfig[] = [
         method: 'getUserById',
         path: '/api/v1/user/:id',
         requires: [Token, UserDomainValidation]
+    },
+    {
+        controller: UserController,
+        method: 'getUserPaymentMethod',
+        path: '/api/v1/user/payment-method/:type',
+        requires: [Token, UserDomainValidation, UserPaymentMethodFactory, UserPaymentOrdersRepository],
+        httpMethod: 'get'
     },
     {
         controller: SpaTokenController,

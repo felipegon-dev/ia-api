@@ -2,8 +2,11 @@ import { Crypt } from '@src/services/base/Crypt';
 import UserPaymentMethodRepository from '@config/database/repository/UserPaymentMethodRepository';
 import UserRepository from '@config/database/repository/UserRepository';
 import db from '@config/database/models';
+// @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
-export abstract class BaseUserPaymentMethod {
+import { UserPaymentMethodInterface, AllowedAccessor, ACCESSOR_IA_WEBSITE } from '@src/services/payment/userPaymentMethod/UserPaymentMethodInterface';
+
+export abstract class BaseUserPaymentMethod implements UserPaymentMethodInterface {
     constructor(
         protected userPaymentMethodRepository: UserPaymentMethodRepository,
         protected userRepository: UserRepository,
@@ -16,7 +19,7 @@ export abstract class BaseUserPaymentMethod {
             await this.userRepository.create(email, email, '', uuidv4());
             user = await this.userRepository.findByEmail(email);
         }
-        return user;
+        return user as any;
     }
     /** Busca el PaymentMethod por code */
     protected async resolvePaymentMethod(code: string): Promise<any> {
@@ -24,10 +27,10 @@ export abstract class BaseUserPaymentMethod {
             where: { code, status: 'active' }
         });
         if (!pm) throw new Error(`Payment method not found: ${code}`);
-        return pm;
+        return pm as any;
     }
     /** Persiste (upsert) el token cifrado */
-    protected async persist(userId: number, paymentMethodId: number, plainCredentials: object, mode: string): Promise<void> {
+    protected async persist(userId: number, paymentMethodId: number, plainCredentials: object, mode: 'development' | 'production'): Promise<void> {
         const paymentToken = this.crypt.encrypt(JSON.stringify(plainCredentials));
         await this.userPaymentMethodRepository.upsert({
             userId,
@@ -41,9 +44,44 @@ export abstract class BaseUserPaymentMethod {
     protected async fetchDecrypted(userId: number, paymentMethodId: number): Promise<Record<string, any> | null> {
         const record = await this.userPaymentMethodRepository.findByUserAndPaymentMethod(userId, paymentMethodId);
         if (!record) return null;
-        const decrypted = this.crypt.decrypt(record.paymentToken);
-        return { ...JSON.parse(decrypted), mode: record.mode, status: record.status };
+        const r = record as any;
+
+        try {
+            const decrypted = this.crypt.decrypt(r.paymentToken);
+            return { ...JSON.parse(decrypted), mode: r.mode, status: r.status };
+        } catch (decryptErr) {
+            try {
+                const parsed = JSON.parse(r.paymentToken);
+                console.warn(`[fetchDecrypted] paymentToken for userId=${userId} is not encrypted. Using plain JSON fallback.`);
+                return { ...parsed, mode: r.mode, status: r.status };
+            } catch {
+                console.error(`[fetchDecrypted] Cannot decrypt or parse paymentToken for userId=${userId}:`, decryptErr);
+                return null;
+            }
+        }
     }
     abstract save(email: string, data: Record<string, any>): Promise<{ success: boolean }>;
-    abstract get(email: string, paymentMethodCode: string): Promise<Record<string, any> | null>;
+    abstract get(email: string, paymentMethodCode?: string): Promise<Record<string, any> | null>;
+
+    /**
+     * Por defecto devuelve todos los campos de get() excepto `paymentToken`.
+     * Subclases pueden sobreescribir para exponer/ocultar campos específicos.
+     */
+    async getFiltered(email: string, paymentMethodCode?: string): Promise<Record<string, any> | null> {
+        const data = await this.get(email, paymentMethodCode);
+        if (!data) return null;
+        const { paymentToken, ...filtered } = data;
+        return filtered;
+    }
+
+    /**
+     * Por defecto sólo ia-website puede acceder.
+     * Transfer sobreescribe get para añadir 'token'.
+     */
+    allowedAccess(): { get: AllowedAccessor[]; save: AllowedAccessor[] } {
+        return {
+            get: [ACCESSOR_IA_WEBSITE],
+            save: [ACCESSOR_IA_WEBSITE],
+        };
+    }
 }

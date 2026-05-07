@@ -70,6 +70,15 @@ export class PaymentController extends BaseAuthController {
             const method = paymentManager.getPaymentType();
             const separator = baseUrlWithData.includes('?') ? '&' : '?';
 
+            /**
+             * data examples:
+             *
+             * redsys (card/bizum): URL del TPV Redsys con params por GET que el frontend reenviará por POST
+             *   "https://sis-t.redsys.es:25443/sis/realizarPago?Ds_SignatureVersion=HMAC_SHA256_V1&Ds_MerchantParameters=eyJEU19NRVJDSEFOVF9BTU9VTlQiOiI0NzIiLCJEU19NRVJDSEFOVF9PUkRFUiI6Ijc3ODE1NTQ5NTU1NyIsIkRTX01FUkNIQU5UX01FUkNIQU5UQ09ERSI6Ijk5OTAwODg4MSIsIkRTX01FUkNIQU5UX0NVUlJFTkNZIjoiOTc4IiwiRFNfTUVSQ0hBTlRfVFJBTlNBQ1RJT05UWVBFIjoiMCIsIkRTX01FUkNIQU5UX1RFUk1JTkFMIjoiMSIsIkRTX01FUkNIQU5UX01FUkNIQU5UVVJMIjoiaHR0cHM6Ly91bmdyYXZlZC1pbnRlcmNvcmFjb2lkLWNocmlzdG9wZXIubmdyb2stZnJlZS5kZXYvYXBpL3YxL3BheW1lbnQvY2FsbGJhY2siLCJEU19NRVJDSEFOVF9VUkxPSyI6Imh0dHBzOi8vd3d3LmxhdGllbmRhbmF1dGljYS5lcy9pYS1jaGVja291dC5waHA%2FbWV0aG9kPWNhcmQmc3VjY2Vzcz10cnVlIiwiRFNfTUVSQ0hBTlRfVVJMS08iOiJodHRwczovL3d3dy5sYXRpZW5kYW5hdXRpY2EuZXMvaWEtY2hlY2tvdXQucGhwP21ldGhvZD1jYXJkJmNhbmNlbD10cnVlIiwiRFNfTUVSQ0hBTlRfTUVSQ0hBTlROQU1FIjoid3d3LmxhdGllbmRhbmF1dGljYS5lcyJ9&Ds_Signature=YkYfCtqnb%2FhmR8%2Ff%2FXmA6kMOHdU1wp1hQmiyUhOlcyY%3D&method=card"             *
+             *
+             * transfer: returnUrl con providerId (timestamp) para identificar el pedido y method
+             *   "https://www.latiendanautica.es/ia-checkout.php?method=transfer&success=true&providerId=260507120408&method=transfer"
+             */
             const data = `${baseUrlWithData}${separator}method=${encodeURIComponent(method)}`;
             console.log(data);
 

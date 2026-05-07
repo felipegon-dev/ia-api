@@ -140,6 +140,7 @@ export type UserPaymentMethodAttributes = {
     userId: number;
     paymentMethodId: number;
     status: "active" | "inactive";
+    mode: "development" | "production";
     paymentToken?: string | null;
     metadata?: Record<string, any> | null;
     createdAt?: Date;
@@ -148,7 +149,7 @@ export type UserPaymentMethodAttributes = {
 
 export type UserPaymentMethodCreationAttributes = Optional<
     UserPaymentMethodAttributes,
-    "id" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
+    "id" | "mode" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
 >;
 
 export type UserPaymentMethodModel = Model<

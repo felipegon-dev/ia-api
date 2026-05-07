@@ -25,29 +25,27 @@ export default class UserPaymentMethodRepository {
         userId: number;
         paymentMethodId: number;
         paymentToken: string;
-        mode: string;
-        status: string;
+        mode: 'development' | 'production';
+        status: 'active' | 'inactive';
     }) {
         const existing = await this.findByUserAndPaymentMethod(data.userId, data.paymentMethodId);
         if (existing) {
-            await db.UserPaymentMethod.update(
-                {
-                    paymentToken: data.paymentToken,
-                    mode: data.mode,
-                    status: data.status,
-                    updatedAt: new Date()
-                },
-                { where: { userId: data.userId, paymentMethodId: data.paymentMethodId } }
-            );
+            await (existing as any).update({
+                paymentToken: data.paymentToken,
+                mode: data.mode,
+                status: data.status,
+                updatedAt: new Date()
+            });
             return existing;
         }
-        return db.UserPaymentMethod.create({
+        const created = await db.UserPaymentMethod.create({
             userId: data.userId,
             paymentMethodId: data.paymentMethodId,
             paymentToken: data.paymentToken,
-            mode: data.mode,
             status: data.status,
         });
+        await (created as any).update({ mode: data.mode });
+        return created;
     }
 
     public async getAllPaymentMethods() {
@@ -58,4 +56,3 @@ export default class UserPaymentMethodRepository {
         });
     }
 }
-
