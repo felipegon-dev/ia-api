@@ -40,7 +40,7 @@ Tech NodeJs
 
 
 ### Test Redsys
-`ngrok http https://localhost:8000`
+`ngrok http 3000`
 
 * Test Bizum Phone: 700000000
 * Key: 1234

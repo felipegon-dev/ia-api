@@ -6,8 +6,7 @@ import Url from "@src/util/Url";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
 import PaymentRepository from "@config/database/repository/PaymentRepository";
-import {isDevelopmentMode} from "@config/constants/AppMode";
-import {CALL_BACK_BASE_URL_DEV, CALL_BACK_PATH} from "@config/v1.api.routes";
+import {CALL_BACK_PATH} from "@config/v1.api.routes";
 
 export interface ProviderMetadata {
     Ds_SignatureVersion: string;
@@ -123,15 +122,9 @@ export class PaymentManager {
     }
 
     public getCallbackUrl(): string {
-        let baseUrl = '';
-        if (isDevelopmentMode) {
-            baseUrl = CALL_BACK_BASE_URL_DEV;
-        } else {
-            baseUrl = process.env.VITE_API_URL as string;
-        }
-
-        return baseUrl+CALL_BACK_PATH;
-
+        const host = process.env.CALLBACK_HOST;
+        if (!host) throw new Error('CALLBACK_HOST env variable is not set');
+        return host + CALL_BACK_PATH;
     }
 
     async getOrderWithDomainInfo(orderId: string): Promise<CallBackData> {

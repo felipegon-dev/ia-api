@@ -7,7 +7,8 @@
     "prod:worker": "pm2-runtime run/worker-redis.prod.js",
     "build": "tsc --project tsconfig.json",
     "worker": "ts-node -r tsconfig-paths/register run/worker-redis.ts",
-    "dev": "nodemon --watch src --watch run --watch config --ext ts,tsx,js,json run/www"
+    "dev": "nodemon --watch src --watch run --watch config --ext ts,tsx,js,json run/www",
+    "test": "for f in tests/api/*.sh; do bash \"$f\"; done"
   },
   "dependencies": {
     "axios": "^1.16.0",
