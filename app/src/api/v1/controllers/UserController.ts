@@ -22,7 +22,8 @@ export class UserController extends BaseAuthController {
     getUserById = async (req: Request, res: Response) => {
         try {
             const user: UserExtended = await this.validate(req);
-            const userDTO: UserDTO = toUserDTO(user, this.userDomainValidation.getUserDomain());
+            const total = parseFloat(req.query.total as string) || 0;
+            const userDTO: UserDTO = toUserDTO(user, this.userDomainValidation.getUserDomain(), total);
             res.status(200).json({
                 success: true,
                 data: userDTO
