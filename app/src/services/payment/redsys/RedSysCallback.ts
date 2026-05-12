@@ -4,6 +4,7 @@ import {Crypt} from "@src/services/base/Crypt";
 import {RedSysError} from "@src/errors/RedSysError";
 import PaymentRepository from "@config/database/repository/PaymentRepository";
 import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
+import logger from '@src/util/logger';
 
 export interface RedSysMerchantParams {
     Ds_Amount: string
@@ -81,7 +82,7 @@ export class RedSysCallback implements PaymentCallbackInterface {
 
         try {
             const decoded = Buffer.from(this.merchantParams, 'base64').toString('utf8')
-            console.log('merchant params:', decoded)
+            logger.debug({ merchantParams: decoded }, 'Redsys merchant params decoded');
             return JSON.parse(decoded) as RedSysMerchantParams
         } catch (error) {
             throw new RedSysError('Invalid merchant parameters')

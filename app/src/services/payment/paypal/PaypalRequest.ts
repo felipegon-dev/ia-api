@@ -9,6 +9,7 @@ import {Crypt} from "@src/services/base/Crypt";
 import {ValidationError} from "@src/errors/ValidationError";
 import {PaymentError} from "@src/errors/PaymentError";
 import {isProductionMode} from "@config/constants/AppMode";
+import logger from '@src/util/logger';
 
 export interface PaypalCredentials {
     client_id: string;
@@ -154,7 +155,7 @@ export class PaypalRequest implements PaymentRequestInterface {
                 }
             );
         } catch (err: any) {
-            console.error(err.response?.data || err.message);
+            logger.error({ err: err.response?.data ?? err.message }, 'PayPal order creation failed');
             throw new PaymentError('PayPal order creation failed: ' + (err as Error).message);
         }
     }

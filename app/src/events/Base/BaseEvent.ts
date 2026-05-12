@@ -3,6 +3,7 @@ import {EventInterface} from "@src/events/Base/EventInterface";
 import {CallBackData, PaymentManager} from "@src/services/payment/PaymentManager";
 import https from "https";
 import fetch from "node-fetch";
+import logger from '@src/util/logger';
 
 export default abstract class BaseEvent implements EventInterface {
     protected eventData: EventData | undefined;
@@ -23,7 +24,7 @@ export default abstract class BaseEvent implements EventInterface {
 
     async sendCallback(callBackData: CallBackData): Promise<boolean> {
         try {
-            console.info('Sending callback to:', callBackData.callbackUrl);
+            logger.info({ callbackUrl: callBackData.callbackUrl }, 'Sending callback');
 
             const agent = new https.Agent({ rejectUnauthorized: false });
 
@@ -47,23 +48,24 @@ export default abstract class BaseEvent implements EventInterface {
                 agent
             });
 
-            console.info('Callback response status:', response.status, response.statusText);
-            console.info('Callback response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+            logger.info(
+                { status: response.status, statusText: response.statusText },
+                'Callback response received'
+            );
 
             const text = await response.text();
-            console.info('Callback response body:', text);
 
             let json: any;
             try {
                 json = JSON.parse(text);
-                console.info('Callback response parsed JSON:', json);
+                logger.debug({ responseBody: json }, 'Callback response parsed JSON');
             } catch {
-                console.warn('Callback response is not valid JSON');
+                logger.error({ responseBody: text }, 'Callback response is not valid JSON');
             }
 
             return response.ok;
         } catch (error) {
-            console.error('Error sending callback:', error);
+            logger.error({ err: error }, 'Error sending callback');
             return false;
         }
     }

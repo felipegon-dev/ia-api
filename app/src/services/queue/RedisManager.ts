@@ -1,5 +1,6 @@
 import Redis, { RedisOptions } from 'ioredis';
 import EventData from "@src/services/queue/EventData";
+import logger from '@src/util/logger';
 
 type XReadGroupResponse = [
     string,
@@ -30,7 +31,7 @@ class RedisManager {
             const response = await this.redis.ping();
             return response === 'PONG';
         } catch (error) {
-            console.error('❌ Error connecting Redis:', error);
+            logger.error({ err: error }, 'Error connecting to Redis');
             return false;
         }
     }
@@ -58,7 +59,7 @@ class RedisManager {
         streamName: string = REDIS_DEFAULT_STREAM,
         groupName: string = REDIS_DEFAULT_GROUP,
         blockSeconds: number = 5
-    ): Promise<{ id: string; data: EventData } | null> {
+    ): Promise<{ id: string; data: EventData; expireAt: number } | null> {
         const blockMs = blockSeconds * 1000;
         const response = await this.redis.xreadgroup(
             'GROUP',
@@ -80,8 +81,10 @@ class RedisManager {
         if (dataIndex === -1) return null;
 
         const rawData = fields[dataIndex + 1];
+        const expireIndex = fields.indexOf('expireAt');
+        const expireAt = expireIndex !== -1 ? parseInt(fields[expireIndex + 1], 10) : 0;
 
-        return { id, data: EventData.fromJSON(rawData) };
+        return { id, data: EventData.fromJSON(rawData), expireAt };
     }
 
     // todo delete
@@ -121,10 +124,10 @@ class RedisManager {
     async reclaimWithBackoff(
         streamName: string = REDIS_DEFAULT_STREAM,
         groupName: string = REDIS_DEFAULT_GROUP
-    ): Promise<{ id: string; data: EventData; deliveryCount: number }[]> {
+    ): Promise<{ id: string; data: EventData; deliveryCount: number; expireAt: number }[]> {
 
         const BASE_DELAY = 10000; // 10s
-        const reclaimedEvents: { id: string; data: EventData; deliveryCount: number }[] = [];
+        const reclaimedEvents: { id: string; data: EventData; deliveryCount: number; expireAt: number }[] = [];
 
         type PendingEntry = [string, string, number, number];
         const pending = await this.redis.xpending(
@@ -181,10 +184,14 @@ class RedisManager {
                     continue;
                 }
 
+                const expireIndex = fields.indexOf('expireAt');
+                const expireAt = expireIndex !== -1 ? parseInt(fields[expireIndex + 1], 10) : 0;
+
                 reclaimedEvents.push({
                     id: msgId,
                     data: EventData.fromJSON(rawData),
-                    deliveryCount
+                    deliveryCount,
+                    expireAt,
                 });
             }
         }
@@ -211,12 +218,12 @@ class RedisManager {
 
                 const expireAt = parseInt(fields[expireIndex + 1]);
                 if (Date.now() > expireAt) {
-                    console.log(`[${new Date().toISOString()}] Deleting expired message ${id}`);
+                    logger.info({ messageId: id }, 'Deleting expired message');
                     await this.redis.xdel(streamName, id);
                 }
             }
         } catch (err: any) {
-            console.error(`[${new Date().toISOString()}] Error clearing TTL messages:`, err.message);
+            logger.error({ err }, 'Error clearing TTL messages');
         }
     }
 

@@ -3,6 +3,7 @@ import { BaseAuthController } from "@src/api/v1/controllers/BaseAuthController";
 import { UserPaymentOrderStatus } from "@config/database/vo/UserPaymentOrderStatus";
 import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControllerInjection";
 import EventData, {EventType} from "@src/services/queue/EventData";
+import logger from '@src/util/logger';
 
 export class PaymentController extends BaseAuthController {
 
@@ -64,7 +65,7 @@ export class PaymentController extends BaseAuthController {
                     EventType.postPayment
                 )
             );
-            console.log('event sent to redis with id:', id);
+            logger.info({ redisId: id }, 'Event sent to redis');
 
             const baseUrlWithData = await providerRequest.getResultRedirectUrl();
             const method = paymentManager.getPaymentType();
@@ -80,14 +81,14 @@ export class PaymentController extends BaseAuthController {
              *   "https://www.latiendanautica.es/ia-checkout.php?method=transfer&success=true&providerId=260507120408&method=transfer"
              */
             const data = `${baseUrlWithData}${separator}method=${encodeURIComponent(method)}`;
-            console.log(data);
+            logger.debug({ redirectUrl: data }, 'Payment redirect URL generated');
 
             res.status(200).json({
                 success: true,
                 data: data,
             });
         } catch (error) {
-            console.error('Error in postPayment:', error);
+            logger.error({ err: error }, 'Error in postPayment');
             res.status(500).json({
                 success: false,
             });
@@ -113,7 +114,7 @@ export class PaymentController extends BaseAuthController {
             }
             res.status(200).json({success: true});
         } catch (error) {
-            console.error('Error in callbackPayment:', error);
+            logger.error({ err: error }, 'Error in callbackPayment');
             res.status(500).json({
                 success: false,
             });
@@ -126,7 +127,7 @@ export class PaymentController extends BaseAuthController {
             await this.inject.paymentManager.validateProviderMetadata(req.body.id, req.body.metadata);
             res.status(200).json({success: true});
         } catch (error) {
-            console.error('Error in validateCallbackPayment:', error);
+            logger.error({ err: error }, 'Error in validateCallbackPayment');
             res.status(500).json({
                 success: false,
             });

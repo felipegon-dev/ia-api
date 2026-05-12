@@ -1,22 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '@src/errors/AppError';
-import {isDevelopmentMode} from "@config/constants/AppMode";
-
+import { isDevelopmentMode } from "@config/constants/AppMode";
+import logger from '@src/util/logger';
 
 export const catchAsync =
     (fn: Function) =>
         (req: Request, res: Response, next: NextFunction) =>
             Promise.resolve(fn(req, res, next)).catch(next);
 
+/**
+ * Manejador global de errores de Express.
+ * DEBE tener 4 parámetros para que Express lo reconozca como error handler.
+ */
 export function errorHandler(
     err: any,
+    req: Request,
     res: Response,
-) {
-    console.error(err);
+    _next: NextFunction,
+): void {
+    // Siempre loguear con nivel adecuado
+    if (err instanceof AppError && err.status < 500) {
+        // Errores controlados 4xx → warn (no son bugs del servidor)
+        logger.warn(
+            { err, method: req.method, url: req.url, status: err.status },
+            err.message,
+        );
+    } else {
+        // Errores 5xx o desconocidos → error
+        logger.error(
+            { err, method: req.method, url: req.url },
+            err?.message ?? 'Unhandled error',
+        );
+    }
 
-    // Errores controlados (nuestros)
+    // Errores controlados (nuestros AppError)
     if (err instanceof AppError) {
-        return res.status(err.status).json({
+        res.status(err.status).json({
             success: false,
             message: err.message,
             code: err.code,
@@ -25,9 +44,10 @@ export function errorHandler(
                 ? { details: (err as any).details }
                 : {}),
         });
+        return;
     }
 
-    return res.status(500).json({
+    res.status(500).json({
         success: false,
         message: 'Internal server error',
         code: 'INTERNAL_ERROR',

@@ -1,18 +1,22 @@
 import { Request, Response } from 'express';
 import { UserPaymentMethodFactory } from '@src/services/payment/userPaymentMethod/UserPaymentMethodFactory';
 import { PaymentType } from '@src/services/payment/Payment';
+import logger from '@src/util/logger';
+
 export class UserPaymentMethodController {
     constructor(private factory: UserPaymentMethodFactory) {}
+
     /** GET /api/v1/admin/payment-methods */
     getPaymentMethods = async (req: Request, res: Response) => {
         try {
             const methods = await this.factory.getPaymentMethods();
             res.status(200).json({ success: true, data: methods });
         } catch (error: any) {
+            logger.error({ err: error }, 'Error in getPaymentMethods');
             res.status(500).json({ success: false, message: error.message });
         }
     };
-    // ── Generic credentials ──────────────────────────────────────────────
+
     /** GET /api/v1/admin/payment-methods/:method?email=...&code=... */
     getCredentials = async (req: Request, res: Response) => {
         try {
@@ -26,9 +30,11 @@ export class UserPaymentMethodController {
             if (!data) { res.status(404).json({ success: false, message: 'No credentials found' }); return; }
             res.status(200).json({ success: true, data });
         } catch (error: any) {
+            logger.error({ err: error }, 'Error in getCredentials');
             res.status(500).json({ success: false, message: error.message });
         }
     };
+
     /** POST /api/v1/admin/payment-methods/:method */
     saveCredentials = async (req: Request, res: Response) => {
         try {
@@ -41,6 +47,7 @@ export class UserPaymentMethodController {
             const result = await this.factory.create(method).save(email, credentials);
             res.status(200).json(result);
         } catch (error: any) {
+            logger.error({ err: error }, 'Error in saveCredentials');
             res.status(500).json({ success: false, message: error.message });
         }
     };

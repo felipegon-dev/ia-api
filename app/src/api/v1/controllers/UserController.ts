@@ -7,6 +7,7 @@ import { ACCESSOR_TOKEN } from '@src/services/payment/userPaymentMethod/UserPaym
 import { PaymentType } from '@src/services/payment/Payment';
 import { UnauthorizedError } from '@src/errors/UnauthorizedError';
 import UserPaymentOrdersRepository from '@config/database/repository/UserPaymentOrdersRepository';
+import logger from '@src/util/logger';
 
 export class UserController extends BaseAuthController {
 
@@ -29,7 +30,7 @@ export class UserController extends BaseAuthController {
                 data: userDTO
             });
         } catch (error) {
-            console.error('Error in getUserById:', error);
+            logger.error({ err: error }, 'Error in getUserById');
             res.status(500).json({
                 success: false,
                 message: error
@@ -100,7 +101,7 @@ export class UserController extends BaseAuthController {
                 res.status(401).json({ success: false, message: 'Unauthorized' });
                 return;
             }
-            console.error('Error in getUserPaymentMethod:', error);
+            logger.error({ err: error }, 'Error in getUserPaymentMethod');
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     }

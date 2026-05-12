@@ -5,6 +5,7 @@ import db from '@config/database/models';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 import { UserPaymentMethodInterface, AllowedAccessor, ACCESSOR_IA_WEBSITE } from '@src/services/payment/userPaymentMethod/UserPaymentMethodInterface';
+import logger from '@src/util/logger';
 
 export abstract class BaseUserPaymentMethod implements UserPaymentMethodInterface {
     constructor(
@@ -52,10 +53,10 @@ export abstract class BaseUserPaymentMethod implements UserPaymentMethodInterfac
         } catch (decryptErr) {
             try {
                 const parsed = JSON.parse(r.paymentToken);
-                console.warn(`[fetchDecrypted] paymentToken for userId=${userId} is not encrypted. Using plain JSON fallback.`);
+                logger.warn({ userId }, 'paymentToken is not encrypted. Using plain JSON fallback.');
                 return { ...parsed, mode: r.mode, status: r.status };
             } catch {
-                console.error(`[fetchDecrypted] Cannot decrypt or parse paymentToken for userId=${userId}:`, decryptErr);
+                logger.error({ err: decryptErr, userId }, 'Cannot decrypt or parse paymentToken');
                 return null;
             }
         }
