@@ -9,6 +9,7 @@ const rateLimitedPaths = [
     '/api/v1/payment',
     '/api/v1/payment/callback',
     '/api/v1/payment/callback/validate',
+    '/api/v1/security/log',
 ];
 
 const limiter = rateLimit({

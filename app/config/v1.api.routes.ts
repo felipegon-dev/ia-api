@@ -8,6 +8,7 @@ import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControlle
 import { UserPaymentMethodController } from "@src/api/v1/controllers/UserPaymentMethodController";
 import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
+import { SecurityController } from "@src/api/v1/controllers/SecurityController";
 
 export const container = new Container();
 
@@ -83,6 +84,14 @@ export const v1ApiRoutes: RouteConfig[] = [
         method: 'saveCredentials',
         path: '/api/v1/admin/payment-methods/:method',
         requires: [UserPaymentMethodFactory],
+        httpMethod: 'post'
+    },
+    // ── Security ─────────────────────────────────────────────────────────
+    {
+        controller: SecurityController,
+        method: 'logTampering',
+        path: '/api/v1/security/log',
+        requires: [],
         httpMethod: 'post'
     },
 ];
