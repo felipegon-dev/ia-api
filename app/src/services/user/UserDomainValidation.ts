@@ -25,11 +25,11 @@ export default class UserDomainValidation {
     public async validate(req: Request) : Promise<UserExtended> {
         const userData = this.userData.set(req).get();
         if (!userData?.userId) {
-            throw new UserError('User not found');
+            throw new UserError('User not found on request');
         }
         const user = await this.userRepository.findByCode(userData.userId as string);
         if (!user) {
-            throw new UserError('User not found');
+            throw new UserError('User '+userData.userId+' not found on db');
         }
 
         const matchedDomain = user.domains?.find(
