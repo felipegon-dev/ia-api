@@ -1,12 +1,29 @@
 import crypto from 'crypto';
 
+/** Bytes de clave requeridos por cada algoritmo AES */
+const KEY_LENGTHS: Record<string, number> = {
+    'aes-128-gcm': 16,
+    'aes-192-gcm': 24,
+    'aes-256-gcm': 32,
+    'aes-128-cbc': 16,
+    'aes-192-cbc': 24,
+    'aes-256-cbc': 32,
+};
+
 export class Crypt {
     private algorithm: string;
     private key: Buffer;
 
     constructor(algorithm: string, key: string) {
         this.algorithm = algorithm;
-        this.key = Buffer.from(key, 'utf8');
+
+        const requiredLen = KEY_LENGTHS[algorithm.toLowerCase()];
+        if (requiredLen) {
+            // Derivar clave de longitud exacta con SHA-256 o truncado/pad
+            this.key = crypto.createHash('sha256').update(key, 'utf8').digest().subarray(0, requiredLen);
+        } else {
+            this.key = Buffer.from(key, 'utf8');
+        }
     }
 
     /**
