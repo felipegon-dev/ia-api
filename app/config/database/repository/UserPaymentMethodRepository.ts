@@ -55,4 +55,23 @@ export default class UserPaymentMethodRepository {
             attributes: ['id', 'name', 'code', 'provider', 'apiVersion', 'status']
         });
     }
+
+    public async getPaymentMethodsByEmail(email: string) {
+        const user = await (db.User as any).findOne({ where: { email } });
+        if (!user) return [];
+        const userId = (user.get({ plain: true }) as any).id;
+
+        const userMethods = await db.UserPaymentMethod.findAll({
+            where: { userId },
+            include: [{
+                model: db.PaymentMethod,
+                as: 'paymentMethod',
+                attributes: ['id', 'name', 'code', 'provider', 'apiVersion', 'status'],
+            }],
+        }) as any[];
+
+        return userMethods
+            .filter((upm: any) => upm.paymentMethod)
+            .map((upm: any) => upm.paymentMethod.get({ plain: true }));
+    }
 }

@@ -1,6 +1,7 @@
 import db from "@config/database/models";
 import {UserStatus} from "@config/database/vo/UserStatus";
 import {UserExtended} from "@apptypes/UserExtended";
+import { UserAttributes } from "@config/database/models";
 
 export default class UserRepository {
     private User = db.User;
@@ -15,6 +16,15 @@ export default class UserRepository {
 
     findById(id: number) {
         return this.User.findByPk(id);
+    }
+
+    async updateById(
+        id: number,
+        data: Partial<Pick<UserAttributes, 'name' | 'code' | 'status'>>
+    ): Promise<UserAttributes | null> {
+        await (this.User as any).update(data, { where: { id } });
+        const result = await this.User.findByPk(id);
+        return result ? (result.get({ plain: true }) as UserAttributes) : null;
     }
 
     /**

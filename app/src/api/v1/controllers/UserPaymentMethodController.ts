@@ -6,10 +6,15 @@ import logger from '@src/util/logger';
 export class UserPaymentMethodController {
     constructor(private factory: UserPaymentMethodFactory) {}
 
-    /** GET /api/v1/admin/payment-methods */
+    /** GET /api/v1/admin/payment-methods?email=... */
     getPaymentMethods = async (req: Request, res: Response) => {
         try {
-            const methods = await this.factory.getPaymentMethods();
+            const email = String(req.query.email ?? '').trim();
+            if (!email) {
+                res.status(400).json({ success: false, message: 'Missing param: email' });
+                return;
+            }
+            const methods = await this.factory.getPaymentMethodsByEmail(email);
             res.status(200).json({ success: true, data: methods });
         } catch (error: any) {
             logger.error({ err: error }, 'Error in getPaymentMethods');

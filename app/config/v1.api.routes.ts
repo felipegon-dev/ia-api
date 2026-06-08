@@ -9,6 +9,13 @@ import { UserPaymentMethodController } from "@src/api/v1/controllers/UserPayment
 import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 import { SecurityController } from "@src/api/v1/controllers/SecurityController";
+import { AdminShippingController } from "@src/api/v1/controllers/AdminShippingController";
+import DomainShippingRepository from "@config/database/repository/DomainShippingRepository";
+import { AdminPreferencesController } from "@src/api/v1/controllers/AdminPreferencesController";
+import DomainPreferencesRepository from "@config/database/repository/DomainPreferencesRepository";
+import { AdminOrdersController } from "@src/api/v1/controllers/AdminOrdersController";
+import { AdminUserController } from "@src/api/v1/controllers/AdminUserController";
+import UserRepository from "@config/database/repository/UserRepository";
 
 export const container = new Container();
 
@@ -93,5 +100,72 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/security/log',
         requires: [],
         httpMethod: 'post'
+    },
+    // ── Admin: shipping methods ───────────────────────────────────────────
+    {
+        controller: AdminShippingController,
+        method: 'list',
+        path: '/api/v1/admin/shipping-methods',
+        requires: [DomainShippingRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminShippingController,
+        method: 'get',
+        path: '/api/v1/admin/shipping-methods/:id',
+        requires: [DomainShippingRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminShippingController,
+        method: 'update',
+        path: '/api/v1/admin/shipping-methods/:id',
+        requires: [DomainShippingRepository],
+        httpMethod: 'put'
+    },
+    // ── Admin: preferences ────────────────────────────────────────────────
+    {
+        controller: AdminPreferencesController,
+        method: 'get',
+        path: '/api/v1/admin/preferences',
+        requires: [DomainPreferencesRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminPreferencesController,
+        method: 'update',
+        path: '/api/v1/admin/preferences',
+        requires: [DomainPreferencesRepository],
+        httpMethod: 'put'
+    },
+    // ── Admin: orders ─────────────────────────────────────────────────────
+    {
+        controller: AdminOrdersController,
+        method: 'list',
+        path: '/api/v1/admin/orders',
+        requires: [UserPaymentOrdersRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminOrdersController,
+        method: 'get',
+        path: '/api/v1/admin/orders/:id',
+        requires: [UserPaymentOrdersRepository],
+        httpMethod: 'get'
+    },
+    // ── Admin: user profile ───────────────────────────────────────────────────
+    {
+        controller: AdminUserController,
+        method: 'get',
+        path: '/api/v1/admin/user',
+        requires: [UserRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminUserController,
+        method: 'update',
+        path: '/api/v1/admin/user',
+        requires: [UserRepository],
+        httpMethod: 'put'
     },
 ];

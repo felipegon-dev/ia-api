@@ -35,6 +35,11 @@ export class UserPaymentMethodFactory {
         throw new Error(`Unknown payment method type: ${type}`);
     }
 
+    /** Lista métodos de pago activos para un usuario concreto */
+    public async getPaymentMethodsByEmail(email: string) {
+        return this.userPaymentMethodRepository.getPaymentMethodsByEmail(email);
+    }
+
     /** Lista todos los métodos de pago activos */
     public async getPaymentMethods() {
         return this.userPaymentMethodRepository.getAllPaymentMethods();

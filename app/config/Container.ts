@@ -14,6 +14,7 @@ import UserPaymentOrdersRepository from "@config/database/repository/UserPayment
 import { AddressManager } from "@src/services/user/AddressManager";
 import { ShippingManager } from "@src/services/user/ShippingManager";
 import DomainShippingRepository from "@config/database/repository/DomainShippingRepository";
+import DomainPreferencesRepository from "@config/database/repository/DomainPreferencesRepository";
 import { PaymentControllerInjection } from "@src/api/v1/injection/PaymentControllerInjection";
 import { PaymentControllerValidation } from "@src/api/v1/validation/PaymentControllerValidation";
 import {Transfer} from "@src/services/payment/transfer/Transfer";
@@ -48,6 +49,7 @@ export class Container {
         this.instances.set(UserPaymentOrdersRepository, new UserPaymentOrdersRepository());
         this.instances.set(PaymentRepository, new PaymentRepository());
         this.instances.set(DomainShippingRepository, new DomainShippingRepository());
+        this.instances.set(DomainPreferencesRepository, new DomainPreferencesRepository());
         this.instances.set(UserPaymentMethodRepository, new UserPaymentMethodRepository());
     }
 

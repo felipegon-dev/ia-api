@@ -109,4 +109,36 @@ export default class UserPaymentOrdersRepository {
         });
         return deleted > 0;
     }
+
+    /**
+     * Obtener todas las órdenes para el panel admin, filtradas por email del usuario
+     */
+    public async findAllAdminByEmail(email: string): Promise<any[]> {
+        const user = await (db.User as any).findOne({
+            where: { email },
+            include: [{ model: db.UserDomain, as: 'domains', attributes: ['id'] }],
+        });
+        if (!user) return [];
+
+        const domains: any[] = user.domains ?? [];
+        if (domains.length === 0) return [];
+
+        const userDomainIds = domains.map((d: any) => d.id);
+
+        const results = await (this.UserPaymentOrders as any).findAll({
+            where: { userDomainId: userDomainIds },
+            order: [['createdAt', 'DESC']],
+        });
+        return results.map((r: any) => r.get({ plain: true }));
+    }
+
+    /**
+     * Obtener todas las órdenes para el panel admin
+     */
+    public async findAllAdmin(): Promise<any[]> {
+        const results = await (this.UserPaymentOrders as any).findAll({
+            order: [['createdAt', 'DESC']],
+        });
+        return results.map((r: any) => r.get({ plain: true }));
+    }
 }
