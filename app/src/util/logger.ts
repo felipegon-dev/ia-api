@@ -43,6 +43,12 @@ const logger = pino(
 
         base: isDevelopmentMode ? undefined : { service: 'ia-api' },
 
+        // Emitir nivel como string ("info", "warn", "error") en lugar del número (30, 40, 50)
+        // para que Grafana/Loki lo reconozca correctamente.
+        formatters: {
+            level: (label) => ({ level: label }),
+        },
+
         // Usar serializador custom para evitar stacks multilínea
         serializers: {
             err:   serializeErr,
