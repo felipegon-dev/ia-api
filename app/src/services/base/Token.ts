@@ -112,7 +112,7 @@ class Token {
             const reqValue = reqData[field as keyof typeof reqData];
 
             if (tokenValue !== reqValue) {
-                logger.error(`Fingerprint mismatch on field "${field}" — tokenFp.${field}: "${tokenValue}" | reqData.${field}: "${reqValue}"`);
+                logger.error(`Fingerprint mismatch on field "${String(field)}" — tokenFp.${String(field)}: "${String(tokenValue)}" | reqData.${String(field)}: "${String(reqValue)}"`);
                 return false;
             }
         }
