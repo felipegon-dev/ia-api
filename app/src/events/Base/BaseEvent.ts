@@ -61,6 +61,7 @@ export default abstract class BaseEvent implements EventInterface {
                 logger.debug({ responseBody: json }, 'Callback response parsed JSON');
             } catch {
                 logger.error({ responseBody: text }, 'Callback response is not valid JSON');
+                return false;
             }
 
             return response.ok;
