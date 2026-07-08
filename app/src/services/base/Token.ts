@@ -4,6 +4,7 @@ import { UnauthorizedError } from "@src/errors/UnauthorizedError";
 import { HEADERS } from "@config/constants/headers";
 import UserData, { UserDataPayload } from "@src/services/base/UserData";
 import { Crypt } from "@src/services/base/Crypt";
+import logger from '@src/util/logger';
 
 // @ts-ignore
 import type { TokenPayload } from '@src/services/base/TokenPayload';
@@ -107,19 +108,14 @@ class Token {
         ];
 
         for (const field of requiredFields) {
-            if (tokenFp[field] !== reqData[field as keyof typeof reqData]) return false;
-        }
+            const tokenValue = tokenFp[field];
+            const reqValue = reqData[field as keyof typeof reqData];
 
-        // Comparación de campos
-        if (tokenFp.srvUserAgent !== reqData.srvUserAgent) return false;
-        if (tokenFp.forwardedFor !== reqData.forwardedFor) return false;
-        if (tokenFp.realIp !== reqData.realIp) return false;
-        if (tokenFp.platform !== reqData.platform) return false;
-        if (tokenFp.timezone !== reqData.timezone) return false;
-        if (tokenFp.srvHost !== reqData.srvHost) return false;
-        if (tokenFp.host !== reqData.host) return false;
-        if (tokenFp.srvReferer !== reqData.srvReferer) return false;
-        if (tokenFp.host !== reqData.srvReferer) return false;
+            if (tokenValue !== reqValue) {
+                logger.error(`Fingerprint mismatch on field "${field}" — tokenFp.${field}: "${tokenValue}" | reqData.${field}: "${reqValue}"`);
+                return false;
+            }
+        }
 
         return true;
     }
