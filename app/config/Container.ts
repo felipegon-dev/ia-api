@@ -26,6 +26,7 @@ import CallbackPayment from "@src/events/CallbackPayment";
 import UserPaymentMethodRepository from "@config/database/repository/UserPaymentMethodRepository";
 import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
 import { Crypt } from "@src/services/base/Crypt";
+import { AdminBasicAuthService } from "@src/api/admin/v1/security/AdminBasicAuthService";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -61,6 +62,7 @@ export class Container {
         this.instances.set(Url, new Url());
         this.instances.set(Token, new Token(this.get(UserData)));
         this.instances.set(RedisManager, new RedisManager());
+        this.instances.set(AdminBasicAuthService, new AdminBasicAuthService());
     }
 
     // --------------------

@@ -207,6 +207,30 @@ class RedisManager {
         return this.redis.xack(streamName, groupName, messageId);
     }
 
+    async invalidateEventsByOrderId(
+        orderId: string,
+        streamName: string = REDIS_DEFAULT_STREAM,
+        groupName: string = REDIS_DEFAULT_GROUP,
+    ): Promise<{ matched: number; acked: number; deleted: number }> {
+        await this.initStream(streamName, groupName);
+        const ids = await this.findEventIdsByOrderId(orderId, streamName);
+        if (ids.length === 0) {
+            return { matched: 0, acked: 0, deleted: 0 };
+        }
+
+        let acked = 0;
+        let deleted = 0;
+        const idChunks = this.chunk(ids, 100);
+
+        for (const chunk of idChunks) {
+            acked += await this.redis.xack(streamName, groupName, ...chunk);
+            deleted += await this.redis.xdel(streamName, ...chunk);
+        }
+
+        logger.info({ orderId, matched: ids.length, acked, deleted }, 'Invalidated worker events by orderId');
+        return { matched: ids.length, acked, deleted };
+    }
+
     async clearTTLMessages(streamName: string = REDIS_DEFAULT_STREAM) {
         try {
             const messages = await this.redis.xrange(streamName, '-', '+');
@@ -229,6 +253,65 @@ class RedisManager {
 
     async disconnect(): Promise<void> {
         await this.redis.quit();
+    }
+
+    private async findEventIdsByOrderId(orderId: string, streamName: string): Promise<string[]> {
+        const ids: string[] = [];
+        const count = 200;
+        let start = '-';
+
+        while (true) {
+            const messages = await this.redis.xrange(
+                streamName,
+                start,
+                '+',
+                'COUNT',
+                count
+            ) as [string, string[]][];
+
+            if (!messages || messages.length === 0) {
+                break;
+            }
+
+            for (const [id, fields] of messages) {
+                const dataIndex = fields.indexOf('data');
+                if (dataIndex === -1) {
+                    continue;
+                }
+                const rawData = fields[dataIndex + 1];
+                if (!rawData) {
+                    continue;
+                }
+
+                let eventData: EventData;
+                try {
+                    eventData = EventData.fromJSON(rawData);
+                } catch (error) {
+                    logger.warn({ err: error, messageId: id }, 'Skipping invalid event payload while invalidating by orderId');
+                    continue;
+                }
+                if (eventData.getOrderId() === orderId) {
+                    ids.push(id);
+                }
+            }
+
+            if (messages.length < count) {
+                break;
+            }
+
+            const lastId = messages[messages.length - 1][0];
+            start = `(${lastId}`;
+        }
+
+        return ids;
+    }
+
+    private chunk<T>(items: T[], size: number): T[][] {
+        const chunks: T[][] = [];
+        for (let i = 0; i < items.length; i += size) {
+            chunks.push(items.slice(i, i + size));
+        }
+        return chunks;
     }
 }
 

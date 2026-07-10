@@ -19,6 +19,26 @@ export default class DomainShippingRepository {
         return result ? (result.get() as DomainShippingAttributes) : null;
     }
 
+    async findActiveByCodesCurrency(
+        userDomainId: number,
+        codes: string[],
+        currency: string
+    ): Promise<DomainShippingAttributes | null> {
+        const normalizedCodes = new Set(
+            codes.map(code => String(code).trim().toLowerCase()).filter(Boolean)
+        );
+
+        const results = await (this.DomainShipping as any).findAll({
+            where: { userDomainId, currency, active: true },
+        });
+
+        const found = results.find((result: any) =>
+            normalizedCodes.has(String(result.code ?? '').trim().toLowerCase())
+        );
+
+        return found ? (found.get() as DomainShippingAttributes) : null;
+    }
+
     private async getUserDomainIdByEmail(email: string): Promise<number | null> {
         const user = await (db.User as any).findOne({
             where: { email },
@@ -59,4 +79,3 @@ export default class DomainShippingRepository {
         return this.findByIdAndEmail(id, email);
     }
 }
-

@@ -16,18 +16,31 @@ export class ShippingManager {
 
     constructor(private readonly domainShippingRepository: DomainShippingRepository) {}
 
-    async get(user: UserExtended, userDomainId: number, shippingMethods: ShippingMethods[]): Promise<ShippingManager> {
+    async get(
+        user: UserExtended,
+        userDomainId: number,
+        shippingMethods: ShippingMethods[],
+        cartAmount: number
+    ): Promise<ShippingManager> {
         for (const method of shippingMethods) {
-            const found = await this.domainShippingRepository.findByCodePriceCurrency(
+            const found = await this.domainShippingRepository.findActiveByCodesCurrency(
                 userDomainId,
-                method.code,
-                method.price,
-                method.currency
+                this.getCodeAliases(method.code),
+                String(method.currency).toUpperCase(),
             );
 
             if (!found) {
                 throw new ValidationError(
                     `Shipping method not valid: code="${method.code}", price=${method.price}, currency="${method.currency}"`
+                );
+            }
+
+            const expectedPrice = this.getExpectedPrice(found.price, found.freeShippingFrom, cartAmount);
+            const requestPrice = this.normalizeAmount(method.price);
+
+            if (requestPrice !== expectedPrice) {
+                throw new ValidationError(
+                    `Shipping method price not valid: code="${method.code}", expected=${expectedPrice}, got=${requestPrice}`
                 );
             }
         }
@@ -42,5 +55,35 @@ export class ShippingManager {
 
     getAmount() {
         return this.shippingMethods.find(m => m.active)?.price ?? 0;
+    }
+
+    private getCodeAliases(code: string): string[] {
+        const normalized = String(code ?? '').trim().toLowerCase();
+
+        if (normalized === 'std-peninsula' || normalized === 'standard') {
+            return ['std-peninsula', 'standard'];
+        }
+
+        if (normalized === 'std-baleares') {
+            return ['std-baleares'];
+        }
+
+        if (normalized === 'pickup') {
+            return ['pickup'];
+        }
+
+        return [normalized];
+    }
+
+    private getExpectedPrice(price: number, freeShippingFrom: number | null | undefined, cartAmount: number): number {
+        const basePrice = this.normalizeAmount(price);
+        const freeFrom = freeShippingFrom == null ? null : this.normalizeAmount(freeShippingFrom);
+        const isFree = freeFrom != null && freeFrom > 0 && this.normalizeAmount(cartAmount) >= freeFrom;
+
+        return isFree ? 0 : basePrice;
+    }
+
+    private normalizeAmount(amount: number): number {
+        return Number(Number(amount ?? 0).toFixed(2));
     }
 }

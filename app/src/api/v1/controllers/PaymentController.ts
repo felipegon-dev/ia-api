@@ -24,7 +24,12 @@ export class PaymentController extends BaseAuthController {
 
             const cartManager = await this.inject.cartManager.get(user, req.body.cartItems);
             const addressManager = await this.inject.addressManager.get(user, req.body.addressItems);
-            const shippingManager = await this.inject.shippingManager.get(user, this.inject.userDomainValidation.getDomainId(), req.body.shippingMethods);
+            const shippingManager = await this.inject.shippingManager.get(
+                user,
+                this.inject.userDomainValidation.getDomainId(),
+                req.body.shippingMethods,
+                cartManager.getAmount(),
+            );
             const paymentManager = this.inject.paymentManager.get(user, req.body.paymentCode);
 
             const totalAmount = cartManager.getAmount() + shippingManager.getAmount();

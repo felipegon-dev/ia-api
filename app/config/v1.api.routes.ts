@@ -16,6 +16,9 @@ import DomainPreferencesRepository from "@config/database/repository/DomainPrefe
 import { AdminOrdersController } from "@src/api/v1/controllers/AdminOrdersController";
 import { AdminUserController } from "@src/api/v1/controllers/AdminUserController";
 import UserRepository from "@config/database/repository/UserRepository";
+import { WorkerRedisAdminController } from "@src/api/admin/v1/controllers/WorkerRedisAdminController";
+import RedisManager from "@src/services/queue/RedisManager";
+import { AdminBasicAuthService } from "@src/api/admin/v1/security/AdminBasicAuthService";
 
 export const container = new Container();
 
@@ -167,5 +170,13 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/admin/user',
         requires: [UserRepository],
         httpMethod: 'put'
+    },
+    // ── Admin v1: worker events ─────────────────────────────────────────────
+    {
+        controller: WorkerRedisAdminController,
+        method: 'invalidateByProviderId',
+        path: '/api/admin/v1/worker-events/invalidate',
+        requires: [RedisManager, AdminBasicAuthService],
+        httpMethod: 'post'
     },
 ];
