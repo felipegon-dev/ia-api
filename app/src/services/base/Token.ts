@@ -100,11 +100,21 @@ class Token {
 
     /**
      * Matches fingerprint fields
+     * Only validates stable client identity: userAgent, platform, timezone, forwardedFor.
+     * Excluded fields:
+     *   - realIp: changes when mobile switches network (WiFi → mobile data)
+     *   - srvUserAgent: server-side data, can change on redeploy
+     *   - srvHost, srvReferer: server-side data, can change between deployments
+     *   - host: server-side data, excluded
      */
     private matchFingerprint(tokenFp: TokenPayload['fp'], reqData: UserDataPayload): boolean {
         const requiredFields: (keyof TokenPayload['fp'])[] = [
-            'srvUserAgent', 'forwardedFor', 'realIp', 'platform',
-            'timezone', 'srvHost', 'host', 'srvReferer'
+            'userAgent', 'platform', 'timezone', 'forwardedFor'
+            // 'realIp',        // Client IP, changes when mobile switches network (WiFi/mobile data)
+            // 'srvUserAgent',  // Server-side data, excluded to prevent fingerprint mismatch on redeploy
+            // 'srvHost',       // Server-side data, can change between deployments
+            // 'srvReferer',    // Server-side data, can change between deployments
+            // 'host'           // Server-side data, excluded
         ];
 
         for (const field of requiredFields) {
