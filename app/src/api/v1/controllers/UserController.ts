@@ -71,6 +71,15 @@ export class UserController extends BaseAuthController {
 
             const filtered = await handler.getFiltered(email);
             if (!filtered) {
+                logger.warn(
+                    {
+                        userId: (user as any).id,
+                        email,
+                        paymentType: type,
+                        missingRecord: `No active payment configuration found for user in userPaymentMethods linked to paymentMethods.code="${type}"`,
+                    },
+                    'Payment method not configured in DB'
+                );
                 res.status(404).json({ success: false, message: 'Payment method not configured' });
                 return;
             }
