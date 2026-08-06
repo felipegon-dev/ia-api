@@ -54,7 +54,7 @@ async function processNewMessages(redis: any) {
     try {
         const event = await redis.getEvent();
         if (event) {
-            logger.info({ eventId: event.id, eventData: event.data }, `New event ${event.id}`);
+            logger.info({ eventId: event.id, providerId: event.data.getOrderId(), eventData: event.data }, `New event ${event.id}`);
             await runAndCommit(redis, event);
         }
     } catch (err: any) {
@@ -70,7 +70,7 @@ async function processPendingMessages(redis: any) {
         }
 
         for (const event of reclaimed) {
-            logger.info({ eventId: event.id, eventData: event.data }, `Processing reclaimed event ${event.id}`);
+            logger.info({ eventId: event.id, providerId: event.data.getOrderId(), eventData: event.data }, `Processing reclaimed event ${event.id}`);
             await runAndCommit(redis, event);
         }
 
@@ -86,35 +86,38 @@ async function runAndCommit(redis: any, event: any): Promise<void> {
     try {
         const success = await runEvent(event.data);
 
+        const providerId = event.data.getOrderId();
+
         if (success) {
             await redis.commitEvent(event.id);
-            logger.info({ eventId: event.id }, 'Event processed successfully');
+            logger.info({ eventId: event.id, providerId }, 'Event processed successfully');
             return;
         }
 
         // runEvent devolvió false (procesamiento fallido pero sin excepción)
         if (isExpired) {
             await redis.commitEvent(event.id);
-            logger.warn({ eventId: event.id, expireAt: event.expireAt }, 'Event processing failed and event has expired — removing from queue');
+            logger.warn({ eventId: event.id, providerId, expireAt: event.expireAt }, 'Event processing failed and event has expired — removing from queue');
         } else {
-            logger.error({ eventId: event.id }, 'Event processing failed — will be retried');
+            logger.error({ eventId: event.id, providerId }, 'Event processing failed — will be retried');
         }
 
     } catch (err: any) {
+        const providerId = event.data.getOrderId();
         const isUnrecoverable = err instanceof WorkerError;
 
         if (isUnrecoverable || isExpired) {
             // Tipos desconocidos nunca podrán procesarse; eventos expirados tampoco deben reintentarse
             await redis.commitEvent(event.id);
             logger.warn(
-                { eventId: event.id, err, isExpired, isUnrecoverable, expireAt: event.expireAt },
+                { eventId: event.id, providerId, err, isExpired, isUnrecoverable, expireAt: event.expireAt },
                 isExpired
                     ? 'Event expired and could not be processed — removing from queue'
                     : 'Unrecoverable event error — removing from queue to avoid infinite retry'
             );
         } else {
             // Error transitorio: se dejará en pending para reintento con backoff
-            logger.error({ eventId: event.id, err }, 'Event processing threw an error — will be retried');
+            logger.error({ eventId: event.id, providerId, err }, 'Event processing threw an error — will be retried');
         }
     }
 }
