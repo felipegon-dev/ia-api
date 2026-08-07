@@ -179,4 +179,11 @@ export const v1ApiRoutes: RouteConfig[] = [
         requires: [RedisManager, AdminBasicAuthService],
         httpMethod: 'post'
     },
+    {
+        controller: WorkerRedisAdminController,
+        method: 'invalidateByEventId',
+        path: '/api/admin/v1/worker-events/invalidate/event-id',
+        requires: [RedisManager, AdminBasicAuthService],
+        httpMethod: 'post'
+    },
 ];

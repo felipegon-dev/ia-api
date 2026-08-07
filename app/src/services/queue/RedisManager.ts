@@ -231,6 +231,25 @@ class RedisManager {
         return { matched: ids.length, acked, deleted };
     }
 
+    async invalidateEventById(
+        eventId: string,
+        streamName: string = REDIS_DEFAULT_STREAM,
+        groupName: string = REDIS_DEFAULT_GROUP,
+    ): Promise<{ matched: number; acked: number; deleted: number }> {
+        await this.initStream(streamName, groupName);
+
+        const messages = await this.redis.xrange(streamName, eventId, eventId) as [string, string[]][];
+        if (!messages || messages.length === 0) {
+            return { matched: 0, acked: 0, deleted: 0 };
+        }
+
+        const acked = await this.redis.xack(streamName, groupName, eventId);
+        const deleted = await this.redis.xdel(streamName, eventId);
+
+        logger.info({ eventId, matched: 1, acked, deleted }, 'Invalidated worker event by eventId');
+        return { matched: 1, acked, deleted };
+    }
+
     async clearTTLMessages(streamName: string = REDIS_DEFAULT_STREAM) {
         try {
             const messages = await this.redis.xrange(streamName, '-', '+');
