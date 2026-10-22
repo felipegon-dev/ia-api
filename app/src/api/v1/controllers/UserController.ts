@@ -5,7 +5,7 @@ import { UserExtended } from '@apptypes/UserExtended';
 import { UserPaymentMethodFactory } from '@src/services/payment/userPaymentMethod/UserPaymentMethodFactory';
 import { ACCESSOR_TOKEN } from '@src/services/payment/userPaymentMethod/UserPaymentMethodInterface';
 import { PaymentType } from '@src/services/payment/Payment';
-import { UnauthorizedError } from '@src/errors/UnauthorizedError';
+import { AppError } from '@src/errors/AppError';
 import UserPaymentOrdersRepository from '@config/database/repository/UserPaymentOrdersRepository';
 import logger from '@src/util/logger';
 
@@ -31,9 +31,11 @@ export class UserController extends BaseAuthController {
             });
         } catch (error) {
             logger.error({ err: error }, 'Error in getUserById');
-            res.status(500).json({
+            const appError = error instanceof AppError ? error : null;
+            res.status(appError?.status ?? 500).json({
                 success: false,
-                message: error
+                code: appError?.code ?? 'INTERNAL_ERROR',
+                message: appError?.message ?? 'Internal server error',
             });
         }
     }
@@ -106,8 +108,12 @@ export class UserController extends BaseAuthController {
             res.status(200).json({ success: true, data: { ...filtered, order: orderData } });
 
         } catch (error) {
-            if (error instanceof UnauthorizedError || (error as any)?.message?.includes('Token') || (error as any)?.message?.includes('Fingerprint') || (error as any)?.message?.includes('encrypted')) {
-                res.status(401).json({ success: false, message: 'Unauthorized' });
+            if (error instanceof AppError) {
+                res.status(error.status).json({
+                    success: false,
+                    code: error.code ?? 'INTERNAL_ERROR',
+                    message: error.message,
+                });
                 return;
             }
             logger.error({ err: error }, 'Error in getUserPaymentMethod');

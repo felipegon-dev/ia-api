@@ -1,7 +1,7 @@
 import UserRepository from "@config/database/repository/UserRepository";
 import { Request } from 'express';
 import UserData from "@src/services/base/UserData";
-import {UserError} from "@src/errors/UserError";
+import {ForbiddenError} from "@src/errors/ForbiddenError";
 import Url from "@src/util/Url";
 import {UserExtended} from "@apptypes/UserExtended";
 import {ValidationError} from "@src/errors/ValidationError";
@@ -25,11 +25,11 @@ export default class UserDomainValidation {
     public async validate(req: Request) : Promise<UserExtended> {
         const userData = this.userData.set(req).get();
         if (!userData?.userId) {
-            throw new UserError('User not found on request');
+            throw new ForbiddenError('User access is not allowed');
         }
         const user = await this.userRepository.findByCode(userData.userId as string);
         if (!user) {
-            throw new UserError('User '+userData.userId+' not found on db');
+            throw new ForbiddenError('User access is not allowed');
         }
 
         const matchedDomain = user.domains?.find(
@@ -40,7 +40,7 @@ export default class UserDomainValidation {
         const allowed = !!matchedDomain;
 
         if (!allowed) {
-            throw new UserError('Domain not found');
+            throw new ForbiddenError('Domain access is not allowed');
         }
 
         this.userDomain = matchedDomain;

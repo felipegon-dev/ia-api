@@ -22,8 +22,18 @@ class RedisManager {
             ...(process.env.REDIS_PASSWORD ? { password: process.env.REDIS_PASSWORD } : {}),
             connectTimeout: 5000,
             maxRetriesPerRequest: 1,
+            // Backoff exponencial (200ms, 400ms, ... máx 5s) mientras Redis está caído
+            // (p.ej. durante un `docker restart` del contenedor por el watchdog de carga del VPS).
+            retryStrategy: (times: number) => Math.min(times * 200, 5000),
         };
         this.redis = new Redis(redisOptions);
+
+        // ioredis emite 'error' en cada intento fallido de conexión; sin un listener,
+        // Node lo trata como "Unhandled error event" y lo vuelca dos veces por segundo.
+        // Lo registramos aquí para loguearlo una vez como warning, no como excepción.
+        this.redis.on('error', (error) => {
+            logger.warn({ err: error }, 'Redis connection error (retrying)');
+        });
     }
 
     async checkConnection(): Promise<boolean> {

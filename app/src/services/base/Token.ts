@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { UnauthorizedError } from "@src/errors/UnauthorizedError";
+import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
+import { AppError } from "@src/errors/AppError";
 import { HEADERS } from "@config/constants/headers";
 import UserData, { UserDataPayload } from "@src/services/base/UserData";
 import { Crypt } from "@src/services/base/Crypt";
@@ -8,7 +8,6 @@ import logger from '@src/util/logger';
 
 // @ts-ignore
 import type { TokenPayload } from '@src/services/base/TokenPayload';
-import {ValidationError} from "@src/errors/ValidationError";
 
 /**
  * 1- SPA -> generar token API
@@ -24,14 +23,14 @@ class Token {
 
     constructor(private userData: UserData) {
         const expires = process.env.TOKEN_EXPIRATION;
-        if (!expires) throw new ValidationError('TOKEN_EXPIRATION is not defined');
+        if (!expires) throw new AppError('TOKEN_EXPIRATION is not defined', 500, 'INTERNAL_ERROR');
         this.expiresIn = expires;
 
         const algorithm = process.env.TOKEN_ALGORITHM;
-        if (!algorithm) throw new ValidationError('TOKEN_ALGORITHM is not defined');
+        if (!algorithm) throw new AppError('TOKEN_ALGORITHM is not defined', 500, 'INTERNAL_ERROR');
 
         const key = process.env.TOKEN_ENCRYPTION_SECRET;
-        if (!key) throw new ValidationError('TOKEN_ENCRYPTION_SECRET is not defined');
+        if (!key) throw new AppError('TOKEN_ENCRYPTION_SECRET is not defined', 500, 'INTERNAL_ERROR');
 
         this.crypt = new Crypt(algorithm, key);
     }
@@ -40,18 +39,41 @@ class Token {
      * Validates that the token exists, is valid, and fingerprint matches
      */
     public validate(req: Request): TokenPayload {
-        const token = req.headers[HEADERS.TOKEN_API] as string | null;
-        if (!token) throw new UnauthorizedError("Token not found");
+        const header = req.headers[HEADERS.TOKEN_API];
+        const token = typeof header === 'string' ? header : null;
+        if (!token) throw new AppError('Token is missing', 401, 'TOKEN_MISSING');
 
-        const jwtToken = this.isEncryptionEnabled() ? this.crypt.decrypt(token) : token;
+        let jwtToken: string;
+        try {
+            jwtToken = this.isEncryptionEnabled() ? this.crypt.decrypt(token) : token;
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException)?.code;
+            if (
+                error instanceof Error &&
+                (error.message === 'Invalid encrypted text format' ||
+                    ['ERR_CRYPTO_INVALID_IV', 'ERR_CRYPTO_INVALID_AUTH_TAG', 'ERR_OSSL_EVP_BAD_DECRYPT'].includes(code ?? ''))
+            ) {
+                throw new AppError('Token is invalid', 401, 'TOKEN_INVALID');
+            }
+            throw new AppError('Token encryption could not be verified', 500, 'INTERNAL_ERROR');
+        }
         const decoded = this.verifyJwt(jwtToken);
-        if (!decoded) throw new UnauthorizedError("Invalid token signature");
+        if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) {
+            throw new AppError('Token is invalid', 401, 'TOKEN_INVALID');
+        }
 
         const tokenPayload = decoded as TokenPayload;
+        if (
+            !tokenPayload.fp ||
+            typeof tokenPayload.fp !== 'object' ||
+            Array.isArray(tokenPayload.fp)
+        ) {
+            throw new AppError('Token is invalid', 401, 'TOKEN_INVALID');
+        }
         const currentUserData = this.userData.set(req).get();
 
         if (!this.matchFingerprint(tokenPayload.fp, currentUserData)) {
-            throw new UnauthorizedError("Fingerprint mismatch");
+            throw new AppError('Fingerprint mismatch', 401, 'TOKEN_FINGERPRINT_MISMATCH');
         }
 
         return tokenPayload;
@@ -90,11 +112,15 @@ class Token {
     /**
      * Verifies JWT signature
      */
-    private verifyJwt(jwtToken: string): JwtPayload | null {
+    private verifyJwt(jwtToken: string): JwtPayload {
+        const secret = this.getJWTSecret();
         try {
-            return jwt.verify(jwtToken, this.getJWTSecret()) as JwtPayload;
-        } catch {
-            return null;
+            return jwt.verify(jwtToken, secret) as JwtPayload;
+        } catch (error) {
+            if (error instanceof TokenExpiredError) {
+                throw new AppError('Token has expired', 401, 'TOKEN_EXPIRED');
+            }
+            throw new AppError('Token is invalid', 401, 'TOKEN_INVALID');
         }
     }
 
@@ -144,7 +170,9 @@ class Token {
     }
 
     private getJWTSecret(): string {
-        if (!process.env.JWT_SECRET) throw new UnauthorizedError('JWT_SECRET is not defined');
+        if (!process.env.JWT_SECRET) {
+            throw new AppError('JWT_SECRET is not defined', 500, 'INTERNAL_ERROR');
+        }
         return process.env.JWT_SECRET;
     }
 }

@@ -4,6 +4,7 @@ import { UserPaymentOrderStatus } from "@config/database/vo/UserPaymentOrderStat
 import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControllerInjection";
 import EventData, {EventType} from "@src/services/queue/EventData";
 import logger from '@src/util/logger';
+import { AppError } from '@src/errors/AppError';
 
 export class PaymentController extends BaseAuthController {
 
@@ -16,7 +17,7 @@ export class PaymentController extends BaseAuthController {
 
     postPayment = async (req: Request, res: Response) => {
         try {
-            this.validateRedisConnection(res);
+            if (!this.validateRedisConnection(res)) return;
 
             this.inject.paymentControllerValidation.validateRequest(req);
 
@@ -94,8 +95,11 @@ export class PaymentController extends BaseAuthController {
             });
         } catch (error) {
             logger.error({ err: error }, 'Error in postPayment');
-            res.status(500).json({
+            const appError = error instanceof AppError ? error : null;
+            res.status(appError?.status ?? 500).json({
                 success: false,
+                code: appError?.code ?? 'INTERNAL_ERROR',
+                message: appError?.message ?? 'Internal server error',
             });
         }
 
@@ -103,7 +107,7 @@ export class PaymentController extends BaseAuthController {
 
     callbackPayment = async (req: Request, res: Response) => {
         try {
-            this.validateRedisConnection(res);
+            if (!this.validateRedisConnection(res)) return;
 
             const callback = this.inject.paymentFactory.getProviderCallback(req.body);
             const paymentStatus = await callback.getPaymentStatus();
@@ -139,12 +143,15 @@ export class PaymentController extends BaseAuthController {
         }
     }
 
-    private validateRedisConnection(res: Response): void {
+    private validateRedisConnection(res: Response): boolean {
         if (!this.inject.redisManager.checkConnection()) {
             res.status(503).json({
                 success: false,
+                code: 'SERVICE_UNAVAILABLE',
                 message: 'Service unavailable. Please try again later.'
             });
+            return false;
         }
+        return true;
     }
 }
