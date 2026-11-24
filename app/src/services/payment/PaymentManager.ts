@@ -1,12 +1,14 @@
 import {PaymentMethodAttributes, UserExtended, UserPaymentMethodAttributes} from "@apptypes/UserExtended";
 import {PaymentType} from "@src/services/payment/Payment";
 import {ValidationError} from "@src/errors/ValidationError";
-import UserData from "@src/services/base/UserData";
+import UserData, { UserDataPayload } from "@src/services/base/UserData";
 import Url from "@src/util/Url";
 import UserPaymentOrdersRepository from "@config/database/repository/UserPaymentOrdersRepository";
 import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
 import PaymentRepository from "@config/database/repository/PaymentRepository";
 import {CALL_BACK_PATH} from "@config/v1.api.routes";
+import { SigningKeys } from '@src/services/security/SigningKeys';
+import { SigningKey, moneyMinor } from '@src/services/security/HmacProtocol';
 
 export interface ProviderMetadata {
     Ds_SignatureVersion: string;
@@ -14,6 +16,7 @@ export interface ProviderMetadata {
 }
 
 export interface CallBackData {
+    signingKey?: SigningKey | null;
     callbackUrl: string;
     providerMetadata: any;
     cartItems: any;
@@ -25,6 +28,7 @@ export interface CallBackData {
 }
 export class PaymentManager {
     private userPaymentMethod: (UserPaymentMethodAttributes & { paymentMethod: PaymentMethodAttributes; }) | undefined = undefined;
+    private requestData: UserDataPayload | undefined;
 
     constructor(
         private userData: UserData,
@@ -33,7 +37,7 @@ export class PaymentManager {
         private paymentRepo: PaymentRepository
     ) {}
 
-    public get(user: UserExtended, paymentType: PaymentType): PaymentManager
+    public get(user: UserExtended, paymentType: PaymentType, requestData?: UserDataPayload): PaymentManager
     {
         if (!user.userPaymentMethods || user.userPaymentMethods.length === 0) {
             throw new ValidationError("User payment methods not loaded");
@@ -47,8 +51,10 @@ export class PaymentManager {
             throw new ValidationError("Invalid payment method for user");
         }
 
-        this.userPaymentMethod = userPaymentMethod;
-        return this;
+        const manager = new PaymentManager(this.userData, this.url, this.userPaymentOrdersRepository, this.paymentRepo);
+        manager.userPaymentMethod = userPaymentMethod;
+        manager.requestData = requestData ?? { ...this.userData.get() };
+        return manager;
     }
 
     public getPaymentToken(): string {
@@ -63,7 +69,8 @@ export class PaymentManager {
     }
 
     public getCancelUrl(paymentType: PaymentType): string {
-        const cancelUrl = this.userData.get().lastUrl || this.userData.get().host;
+        const data = this.requestData ?? this.userData.get();
+        const cancelUrl = data.lastUrl || data.host;
         if (!cancelUrl) {
             throw new ValidationError("Cancel URL is not set");
         }
@@ -71,7 +78,8 @@ export class PaymentManager {
     }
 
     public getReturnUrl(paymentType: PaymentType) {
-        const returnUrl = this.userData.get().lastUrl || this.userData.get().host;
+        const data = this.requestData ?? this.userData.get();
+        const returnUrl = data.lastUrl || data.host;
         if (!returnUrl) {
             throw new ValidationError("Return URL is not set");
         }
@@ -79,7 +87,7 @@ export class PaymentManager {
     }
 
     public getHost(): string {
-        const host = this.userData.get().host;
+        const host = (this.requestData ?? this.userData.get()).host;
         if (!host) {
             throw new ValidationError("Host is not set");
         }
@@ -112,13 +120,28 @@ export class PaymentManager {
         })
     }
 
+    public async saveOrderOnce(providerId: string, data: Parameters<PaymentManager['saveOrder']>[0]): Promise<number> {
+        const existing = await this.userPaymentOrdersRepository.findByProviderId(providerId);
+        if (existing) {
+            if (existing.userDomainId !== data.userDomainId ||
+                existing.get('userPaymentMethodId') !== data.userPaymentMethodId ||
+                existing.get('cartItems') !== data.cartItems ||
+                moneyMinor(existing.get('amount')) !== moneyMinor(data.amount)) {
+                throw new ValidationError('Provider order conflicts with the payment attempt');
+            }
+            return existing.getDataValue('id');
+        }
+        const order = await this.saveOrder(data);
+        return order.getDataValue('id');
+    }
+
     public getUserPaymentMethodId(): number {
         if (!this.userPaymentMethod?.id) throw new ValidationError("User payment method is not set");
         return this.userPaymentMethod.id
     }
 
     public async updateOrderStatus(order: string, userPaymentOrderStatus: UserPaymentOrderStatus): Promise<void> {
-        this.paymentRepo.updateOrderStatus(order, userPaymentOrderStatus.Value);
+        await this.paymentRepo.updateOrderStatus(order, userPaymentOrderStatus.Value);
     }
 
     public getCallbackUrl(): string {
@@ -146,6 +169,7 @@ export class PaymentManager {
         }
 
         return {
+            signingKey: await new SigningKeys().find(userDomain.id, 'callback'),
             callbackUrl: this.buildCallbackUrl(domain, callbackPaymentsUrl),
             providerMetadata: userPaymentOrder.providerMetadata ? JSON.parse(userPaymentOrder.providerMetadata) : null,
             cartItems: userPaymentOrder.cartItems ? JSON.parse(userPaymentOrder.cartItems) : null,

@@ -5,6 +5,8 @@ services:
       context: ../../ia-api/docker
       dockerfile: dev.Dockerfile
     restart: always
+    env_file:
+      - ../../ia-api/app/.env
     ports:
       - "3000:80" # 3000 for postman testing, 80 for production
     environment:
@@ -22,6 +24,8 @@ services:
       context: ../../ia-api/docker
       dockerfile: dev.worker.Dockerfile
     restart: always
+    env_file:
+      - ../../ia-api/app/.env
     volumes:
       - ../../ia-api/app:/usr/src/app
     environment:

@@ -96,7 +96,7 @@ async function runAndCommit(redis: any, event: any): Promise<void> {
 
         // runEvent devolvió false (procesamiento fallido pero sin excepción)
         if (isExpired) {
-            await redis.commitEvent(event.id);
+            await redis.deadLetter(event.id, 'expired');
             logger.warn({ eventId: event.id, providerId, expireAt: event.expireAt }, 'Event processing failed and event has expired — removing from queue');
         } else {
             logger.error({ eventId: event.id, providerId }, 'Event processing failed — will be retried');
@@ -108,7 +108,7 @@ async function runAndCommit(redis: any, event: any): Promise<void> {
 
         if (isUnrecoverable || isExpired) {
             // Tipos desconocidos nunca podrán procesarse; eventos expirados tampoco deben reintentarse
-            await redis.commitEvent(event.id);
+            await redis.deadLetter(event.id, isUnrecoverable ? 'unrecoverable' : 'expired');
             logger.warn(
                 { eventId: event.id, providerId, err, isExpired, isUnrecoverable, expireAt: event.expireAt },
                 isExpired

@@ -1,3 +1,6 @@
+### Added 24/11/2026
+- Hmac scecurity for IA Checkout callback
+
 ### Added 26/10/2026
 - Security update node js
 - fingerprint fix

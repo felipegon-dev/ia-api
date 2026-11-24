@@ -2,6 +2,7 @@ import { CartItems } from "@src/services/payment/Payment";
 import {  UserExtended } from "@apptypes/UserExtended";
 import {ValidationError} from "@src/errors/ValidationError";
 import {Currency} from "@config/database/vo/Currency";
+import { moneyMinor } from '@src/services/security/HmacProtocol';
 
 
 /**
@@ -11,25 +12,26 @@ import {Currency} from "@config/database/vo/Currency";
 export class CartManager {
     private cartItems: CartItems[] = [];
     private userExtended: UserExtended | null = null;
+    private exactAmounts = false;
 
 
     // =====================
     // Public methods
     // =====================
-    public async get(userExtended: UserExtended, cartItems: CartItems[]): Promise<CartManager> {
+    public async get(userExtended: UserExtended, cartItems: CartItems[], exactAmounts = false): Promise<CartManager> {
         this.userExtended = userExtended;
         this.cartItems = cartItems;
+        this.exactAmounts = exactAmounts;
         this.validateCartItems();
 
         return this;
     }
 
     public getAmount(): number {
-        return parseFloat(
-            this.cartItems
-                .reduce((sum, item) => sum + item.price * item.quantity, 0)
-                .toFixed(2)
-        );
+        if (this.exactAmounts) {
+            return this.cartItems.reduce((sum, item) => sum + moneyMinor(item.price) * item.quantity, 0) / 100;
+        }
+        return parseFloat(this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
     }
 
     public getCurrency(): Currency {

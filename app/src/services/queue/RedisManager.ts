@@ -9,7 +9,7 @@ type XReadGroupResponse = [
 
 const REDIS_DEFAULT_STREAM = 'default_stream';
 const REDIS_DEFAULT_GROUP = 'default_group';
-const REDIS_DEFAULT_EXPIRATION_MESSAGE_TIME = parseInt(process.env.REDIS_MESSAGE_EXPIRATION_MS || String(60 * 1000), 10);
+const REDIS_DEFAULT_EXPIRATION_MESSAGE_TIME = parseInt(process.env.REDIS_MESSAGE_EXPIRATION_MS || String(24 * 60 * 60 * 1000), 10);
 const CONSUMER_NAME = 'ia-worker'; // nombre constante de consumidor
 
 class RedisManager {
@@ -271,8 +271,7 @@ class RedisManager {
 
                 const expireAt = parseInt(fields[expireIndex + 1]);
                 if (Date.now() > expireAt) {
-                    logger.info({ messageId: id }, 'Deleting expired message');
-                    await this.redis.xdel(streamName, id);
+                    await this.deadLetter(id, 'expired', streamName);
                 }
             }
         } catch (err: any) {
@@ -282,6 +281,21 @@ class RedisManager {
 
     async disconnect(): Promise<void> {
         await this.redis.quit();
+    }
+
+    async deadLetter(id: string, reason: string, streamName = REDIS_DEFAULT_STREAM): Promise<void> {
+        await this.redis.eval(`
+            local rows = redis.call('XRANGE', KEYS[1], ARGV[1], ARGV[1])
+            if #rows == 0 then return 0 end
+            local fields = rows[1][2]
+            table.insert(fields, 'originalId'); table.insert(fields, ARGV[1])
+            table.insert(fields, 'failureReason'); table.insert(fields, ARGV[2])
+            redis.call('XADD', KEYS[2], '*', unpack(fields))
+            redis.call('XACK', KEYS[1], ARGV[3], ARGV[1])
+            redis.call('XDEL', KEYS[1], ARGV[1])
+            return 1
+        `, 2, streamName, `${streamName}:dead`, id, reason, REDIS_DEFAULT_GROUP);
+        logger.error({ eventId: id, reason, streamName }, 'Event retained in dead-letter stream; reconciliation required');
     }
 
     private async findEventIdsByOrderId(orderId: string, streamName: string): Promise<string[]> {
