@@ -11,6 +11,6 @@ export class UserRedsysPaymentMethod extends BaseUserPaymentMethod {
         const user = await this.userRepository.findByEmail(email);
         if (!user) return null;
         const pm = await this.resolvePaymentMethod(paymentMethodCode);
-        return this.fetchDecrypted(user.id, pm.id);
+        return this.fetchDecrypted(user.getDataValue('id'), pm.id);
     }
 }

@@ -1,7 +1,7 @@
 import { Crypt } from '@src/services/base/Crypt';
 import UserPaymentMethodRepository from '@config/database/repository/UserPaymentMethodRepository';
 import UserRepository from '@config/database/repository/UserRepository';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import db from '@config/database/models';
 export interface RedsysCredentials {
     merchantCode: string;
@@ -11,7 +11,7 @@ export interface SavePaymentMethodParams {
     email: string;
     paymentMethodCode: string;
     credentials: RedsysCredentials;
-    mode?: string;
+    mode?: 'development' | 'production';
 }
 export class UserPaymentMethodService {
     constructor(
@@ -25,7 +25,7 @@ export class UserPaymentMethodService {
     public async saveRedsys(params: SavePaymentMethodParams) {
         let user: any = await this.userRepository.findByEmail(params.email);
         if (!user) {
-            const code = uuidv4();
+            const code = randomUUID();
             await this.userRepository.create(params.email, params.email, '', code);
             user = await this.userRepository.findByEmail(params.email);
         }

@@ -58,6 +58,7 @@ declare module "@config/database/models" {
         userId: number;
         paymentMethodId: number;
         status: 'active' | 'inactive';
+        mode: 'development' | 'production';
         paymentToken?: string | null;
         metadata?: Record<string, any> | null;
         createdAt?: Date;
@@ -66,7 +67,7 @@ declare module "@config/database/models" {
 
     export type UserPaymentMethodCreationAttributes = Optional<
         UserPaymentMethodAttributes,
-        "id" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
+        "id" | "mode" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
     >;
 
     // ----------------- UserPaymentOrders -----------------

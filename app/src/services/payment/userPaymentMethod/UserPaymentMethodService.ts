@@ -1,7 +1,7 @@
 import { Crypt } from '@src/services/base/Crypt';
 import UserPaymentMethodRepository from '@config/database/repository/UserPaymentMethodRepository';
 import UserRepository from '@config/database/repository/UserRepository';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import db from '@config/database/models';
 export interface RedsysCredentials {
     merchantCode: string;
@@ -11,7 +11,7 @@ export interface SavePaymentMethodParams {
     email: string;
     paymentMethodCode: string;
     credentials: RedsysCredentials;
-    mode?: string;
+    mode?: 'development' | 'production';
 }
 export class UserPaymentMethodService {
     constructor(
@@ -34,21 +34,23 @@ export class UserPaymentMethodService {
         const record = await this.userPaymentMethodRepository.findByUserAndPaymentMethod(user.id, paymentMethod.id);
         if (!record) return null;
 
-        const decrypted = this.crypt.decrypt(record.paymentToken);
+        const paymentToken = record.getDataValue('paymentToken');
+        if (!paymentToken) throw new Error('Payment token is not configured');
+        const decrypted = this.crypt.decrypt(paymentToken);
         const credentials: RedsysCredentials = JSON.parse(decrypted);
 
         return {
             merchantCode: credentials.merchantCode,
             secretKey: credentials.secretKey,
-            mode: record.mode,
-            status: record.status,
+            mode: record.getDataValue('mode'),
+            status: record.getDataValue('status'),
         };
     }
 
     public async saveRedsys(params: SavePaymentMethodParams) {
         let user: any = await this.userRepository.findByEmail(params.email);
         if (!user) {
-            const code = uuidv4();
+            const code = randomUUID();
             await this.userRepository.create(params.email, params.email, '', code);
             user = await this.userRepository.findByEmail(params.email);
         }
