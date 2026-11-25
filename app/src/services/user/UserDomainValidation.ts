@@ -55,7 +55,9 @@ export default class UserDomainValidation {
 
     resolve(user: UserExtended, req: Request): UserDomainAttributes {
         const host = new URL(req.get('referer') ?? '').host;
-        const domain = user.domains?.find(item => this.url.matchDomain(host, item.domain));
+        const domain = user.domains
+            ?.filter(item => this.url.matchDomain(host, item.domain))
+            .sort((a, b) => this.url.normalizeHost(b.domain).length - this.url.normalizeHost(a.domain).length)[0];
         if (!domain) throw new ForbiddenError('Domain access is not allowed');
         return domain;
     }
