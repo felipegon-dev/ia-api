@@ -8,7 +8,9 @@ import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus
 import PaymentRepository from "@config/database/repository/PaymentRepository";
 import {CALL_BACK_PATH} from "@config/v1.api.routes";
 import { SigningKeys } from '@src/services/security/SigningKeys';
-import { SigningKey, moneyMinor } from '@src/services/security/HmacProtocol';
+import { SigningKey } from '@src/services/security/HmacProtocol';
+import db from '@config/database/models';
+import { Transaction } from 'sequelize';
 
 export interface ProviderMetadata {
     Ds_SignatureVersion: string;
@@ -105,7 +107,7 @@ export class PaymentManager {
         status: string;
         shippingDetails: string;
         description: string
-    }) {
+    }, transaction?: Transaction) {
         return await this.userPaymentOrdersRepository.create({
             userPaymentMethodId: param.userPaymentMethodId,
             userDomainId: param.userDomainId,
@@ -117,22 +119,30 @@ export class PaymentManager {
             shippingDetails: param.shippingDetails,
             description: param.description,
             status: param.status as 'pending' | 'completed' | 'failed' | 'cancelled',
-        })
+        }, transaction)
     }
 
-    public async saveOrderOnce(providerId: string, data: Parameters<PaymentManager['saveOrder']>[0]): Promise<number> {
-        const existing = await this.userPaymentOrdersRepository.findByProviderId(providerId);
-        if (existing) {
-            if (existing.userDomainId !== data.userDomainId ||
-                existing.get('userPaymentMethodId') !== data.userPaymentMethodId ||
-                existing.get('cartItems') !== data.cartItems ||
-                moneyMinor(existing.get('amount')) !== moneyMinor(data.amount)) {
-                throw new ValidationError('Provider order conflicts with the payment attempt');
+    public async saveOrderOnce(
+        providerId: string,
+        data: Parameters<PaymentManager['saveOrder']>[0],
+        linkedOrderId?: number | null,
+        linkOrder?: (orderId: number, transaction: Transaction) => Promise<void>,
+    ): Promise<number> {
+        return db.sequelize.transaction(async (transaction: Transaction) => {
+            if (linkedOrderId != null) {
+                const existing = await this.userPaymentOrdersRepository.findById(linkedOrderId, transaction);
+                if (!existing || existing.get('providerId') !== providerId ||
+                    existing.get('userDomainId') !== data.userDomainId ||
+                    existing.get('userPaymentMethodId') !== data.userPaymentMethodId) {
+                    throw new ValidationError('Linked order conflicts with the payment attempt');
+                }
+                return linkedOrderId;
             }
-            return existing.getDataValue('id');
-        }
-        const order = await this.saveOrder(data);
-        return order.getDataValue('id');
+            const order = await this.saveOrder(data, transaction);
+            const orderId = order.getDataValue('id');
+            if (linkOrder) await linkOrder(orderId, transaction);
+            return orderId;
+        });
     }
 
     public getUserPaymentMethodId(): number {

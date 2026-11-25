@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHmac } = require('node:crypto');
+const { UniqueConstraintError, ValidationErrorItem } = require('sequelize');
 const Module = require('node:module');
 
 let signing = { enabled: true, keyId: 'key', secret: 's'.repeat(43) };
@@ -12,8 +13,10 @@ Module._load = function (id, ...args) {
     if (id === '@src/services/security/PaymentAttempt') {
         return { PaymentAttempt: { async run(domain, authorization, request, create, persist) {
             const snapshot = await create('idempotent');
-            await persist(snapshot, async id => { if (id !== 42) throw new Error('Invalid linked order'); });
-            return snapshot.redirectUrl;
+            const result = await persist(snapshot, async id => {
+                if (id !== 42) throw new Error('Invalid linked order');
+            }, null, async replacement => { snapshot.providerId = replacement.providerId; });
+            return result.redirectUrl;
         } } };
     }
     return originalLoad.call(this, id, ...args);
@@ -55,7 +58,11 @@ function fixture() {
         getPaymentType: () => 'card', getPaymentToken: () => 'token', getCancelUrl: () => 'https://shop.test/cancel',
         getReturnUrl: () => 'https://shop.test/success', getHost: () => 'shop.test',
         getCallbackUrl: () => 'https://api.test/callback', getUserPaymentMethodId: () => 1,
-        saveOrderOnce: async (id, data) => { stored = data; return 42; },
+        saveOrderOnce: async (id, data, linkedId, link) => {
+            stored = data;
+            if (link) await link(42);
+            return 42;
+        },
     };
     const dependencies = {
         token: { validate() {} },
@@ -120,5 +127,47 @@ test('domains without keys retain their unsigned legacy checkout', async () => {
         assert.equal(f.parameters().cartItems[0].title, 'Untrusted browser title');
     } finally {
         signing = original;
+    }
+});
+
+test('colliding transfer references are retried for signed and legacy checkouts', async () => {
+    const originalSigning = signing;
+    const originalTimeout = global.setTimeout;
+    global.setTimeout = callback => { callback(); };
+    try {
+        for (const signed of [true, false]) {
+            signing = originalSigning;
+            const f = fixture();
+            if (!signed) signing = null;
+            if (!signed) delete f.request.body.cartAuthorization;
+            f.request.body.paymentCode = 'transfer';
+            const manager = f.dependencies.paymentManager.get();
+            manager.getPaymentType = () => 'transfer';
+            let generated = 0;
+            let saved = 0;
+            f.dependencies.paymentFactory.getProviderRequest = () => {
+                const id = `reference-${++generated}`;
+                return {
+                    setParameters() {}, createOrder() {}, getOrderId: () => id,
+                    getMetadata: () => '{}', getResultRedirectUrl: async () => `https://shop.test/?providerId=${id}`,
+                };
+            };
+            manager.saveOrderOnce = async (id, data, linkedId, link) => {
+                saved++;
+                if (saved === 1) {
+                    throw new UniqueConstraintError({ errors: [new ValidationErrorItem('duplicate', 'unique violation', 'providerId')] });
+                }
+                assert.equal(id, 'reference-2');
+                if (link) await link(42);
+                return 42;
+            };
+            await f.controller.postPayment(f.request, f.response);
+            assert.equal(f.response.statusCode, 200);
+            assert.match(f.response.body.data, /providerId=reference-2/);
+            assert.equal(saved, 2);
+        }
+    } finally {
+        signing = originalSigning;
+        global.setTimeout = originalTimeout;
     }
 });

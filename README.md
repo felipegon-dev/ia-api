@@ -50,9 +50,17 @@ null if the order is deleted. Migration `20261117100000-cart-authorization-order
 historical rows only when the snapshot provider ID and domain identify exactly one order;
 check its warning and reconcile any unmatched or ambiguous rows manually.
 
+Migration `20261125100000-unique-payment-provider-id` requires all existing provider IDs to
+be unique across `userPaymentOrders`. Check for duplicates with
+`SELECT providerId, COUNT(*) FROM userPaymentOrders GROUP BY providerId HAVING COUNT(*) > 1`
+and reconcile them before migrating. Do not remove or change historical orders without
+reviewing their payment and callback state. Apply the migration before deploying the code:
+the unique index is required to reserve transfer references safely across API instances.
+
 ### Deployment order
 1. Run the migrations (`20261113120000-domainSigningKeys`, `20261113130000-cart-authorizations`
-   and `20261117100000-cart-authorization-order`) **before** deploying the new code.
+   `20261117100000-cart-authorization-order`, and `20261125100000-unique-payment-provider-id`)
+   **before** deploying the new code.
 2. Set `HMAC_ENCRYPTION_SECRET` (ia-api) and the same `IA_ADMIN_SHARED_SECRET` in ia-api and ia-website
    (`openssl rand -base64 48`), then deploy both together.
 3. Generate keys in the panel, install them on the shop server, and only then enable "Require signature".

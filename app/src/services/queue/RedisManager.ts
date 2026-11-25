@@ -214,7 +214,13 @@ class RedisManager {
         streamName: string = REDIS_DEFAULT_STREAM,
         groupName: string = REDIS_DEFAULT_GROUP,
     ): Promise<number> {
-        return this.redis.xack(streamName, groupName, messageId);
+        return Number(await this.redis.eval(`
+            local acknowledged = redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
+            if acknowledged == 1 then
+                redis.call('XDEL', KEYS[1], ARGV[2])
+            end
+            return acknowledged
+        `, 1, streamName, groupName, messageId));
     }
 
     async invalidateEventsByOrderId(

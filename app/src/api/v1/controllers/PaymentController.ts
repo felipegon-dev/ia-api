@@ -11,6 +11,8 @@ import { verifyCart, moneyMinor } from '@src/services/security/HmacProtocol';
 import { PaymentAttempt, AttemptSnapshot } from '@src/services/security/PaymentAttempt';
 import { ValidationError } from '@src/errors/ValidationError';
 import UserData from '@src/services/base/UserData';
+import { PaymentType } from '@src/services/payment/Payment';
+import { Transaction, UniqueConstraintError } from 'sequelize';
 
 export class PaymentController extends BaseAuthController {
 
@@ -101,11 +103,30 @@ export class PaymentController extends BaseAuthController {
                     description: req.body.description ?? '',
                 };
             };
-            const persist = async (snapshot: AttemptSnapshot, linkOrder?: (orderId: number) => Promise<void>): Promise<void> => {
-                const orderId = await paymentManager.saveOrderOnce(snapshot.providerId, {
-                    ...snapshot, userDomainId: domainId, status: UserPaymentOrderStatus.PENDING.Value,
-                });
-                if (linkOrder) await linkOrder(orderId);
+            const persist = async (
+                initialSnapshot: AttemptSnapshot,
+                linkOrder?: (orderId: number, transaction?: Transaction) => Promise<void>,
+                linkedOrderId?: number | null,
+                replaceSnapshot?: (snapshot: AttemptSnapshot) => Promise<void>,
+            ): Promise<AttemptSnapshot> => {
+                let snapshot = initialSnapshot;
+                for (let attempt = 0; ; attempt++) {
+                    try {
+                        await paymentManager.saveOrderOnce(snapshot.providerId, {
+                            ...snapshot, userDomainId: domainId, status: UserPaymentOrderStatus.PENDING.Value,
+                        }, linkedOrderId, linkOrder);
+                        break;
+                    } catch (error) {
+                        const collision = error instanceof UniqueConstraintError &&
+                            error.errors.some(item => item.path === 'providerId' ||
+                                item.path === 'userPaymentOrders_providerId_unique');
+                        if (!collision || paymentManager.getPaymentType() !== PaymentType.TRANSFER ||
+                            linkedOrderId != null || attempt >= 29) throw error;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        snapshot = await create();
+                        if (replaceSnapshot) await replaceSnapshot(snapshot);
+                    }
+                }
                 const id = await this.inject.redisManager.queueEvent(
                     new EventData(
                         'postPayment',
@@ -114,6 +135,7 @@ export class PaymentController extends BaseAuthController {
                     ),
                 );
                 logger.info({ redisId: id }, 'Event sent to redis');
+                return snapshot;
             };
             const requestSnapshot = {
                 paymentCode: req.body.paymentCode, parameters, addressItems: req.body.addressItems,
@@ -123,8 +145,7 @@ export class PaymentController extends BaseAuthController {
             if (authorizationId) {
                 data = await PaymentAttempt.run(domainId, authorizationId, requestSnapshot, create, persist);
             } else {
-                const snapshot = await create();
-                await persist(snapshot);
+                const snapshot = await persist(await create());
                 data = snapshot.redirectUrl;
             }
 

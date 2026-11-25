@@ -4,6 +4,14 @@ const { randomUUID } = require('node:crypto');
 const { Sequelize } = require('sequelize');
 const db = require('../../config/database/models');
 const { PaymentAttempt } = require('../../src/services/security/PaymentAttempt');
+const Module = require('node:module');
+const originalLoad = Module._load;
+Module._load = function (id, ...args) {
+    return id === '@config/v1.api.routes' ? { CALL_BACK_PATH: '/callback' } : originalLoad.call(this, id, ...args);
+};
+const { PaymentManager } = require('../../src/services/payment/PaymentManager');
+Module._load = originalLoad;
+const UserPaymentOrdersRepository = require('../../config/database/repository/UserPaymentOrdersRepository').default;
 
 test('real MariaDB locks and durable snapshots recover concurrent attempts', async () => {
     assert.equal(process.env.IA_HMAC_TEST_DATABASE, '1', 'Run only against an isolated test database');
@@ -11,10 +19,16 @@ test('real MariaDB locks and durable snapshots recover concurrent attempts', asy
     assert.deepEqual(schema, [], 'Integration test requires an empty database');
     const migration = require('../../config/database/migrations/20261113130000-cart-authorizations');
     const orderMigration = require('../../config/database/migrations/20261117100000-cart-authorization-order');
+    const uniqueMigration = require('../../config/database/migrations/20261125100000-unique-payment-provider-id');
     try {
-        await db.sequelize.query('CREATE TABLE userPaymentOrders (id INT PRIMARY KEY, userDomainId INT NOT NULL, providerId VARCHAR(255) NOT NULL)');
+        await db.sequelize.query(`CREATE TABLE userPaymentOrders (
+            id INT AUTO_INCREMENT PRIMARY KEY, userDomainId INT NOT NULL, providerId VARCHAR(255) NOT NULL,
+            userPaymentMethodId INT, providerMetadata JSON, providerAttemptsSync JSON,
+            cartItems JSON, addressItems JSON, amount DECIMAL(12,2), shippingDetails JSON,
+            description VARCHAR(255), status VARCHAR(32), createdAt DATETIME, updatedAt DATETIME
+        )`);
         await migration.up(db.sequelize.getQueryInterface(), Sequelize);
-        await db.sequelize.query("INSERT INTO userPaymentOrders VALUES (42,1,'test-provider'),(43,2,'test-provider'),(44,1,'duplicate'),(45,1,'duplicate')");
+        await db.sequelize.query("INSERT INTO userPaymentOrders (id,userDomainId,providerId) VALUES (42,1,'test-provider'),(43,2,'test-provider'),(44,1,'duplicate'),(45,1,'duplicate')");
         await db.sequelize.query(`INSERT INTO cartAuthorizations (domainId,authorizationId,requestHash,snapshot,createdAt) VALUES
             (1,'historic','hash','{"providerId":"test-provider"}',NOW()),
             (1,'ambiguous','hash','{"providerId":"duplicate"}',NOW()),
@@ -76,6 +90,48 @@ test('real MariaDB locks and durable snapshots recover concurrent attempts', asy
             { replacements: { authorization }, type: Sequelize.QueryTypes.SELECT },
         );
         assert.equal(deleted.orderId, null);
+
+        await assert.rejects(uniqueMigration.up(db.sequelize.getQueryInterface(), Sequelize), /Duplicate payment provider IDs/);
+        await db.sequelize.query('DELETE FROM userPaymentOrders WHERE id IN (44,45)');
+        await uniqueMigration.up(db.sequelize.getQueryInterface(), Sequelize);
+
+        const manager = new PaymentManager(null, null, new UserPaymentOrdersRepository(), null);
+        const orderData = {
+            userPaymentMethodId: 1, userDomainId: 1, providerId: '261125100000',
+            providerMetadata: '{}', cartItems: '[]', addressItems: '{"buyer":"one"}',
+            amount: 10, status: 'pending', shippingDetails: '[]', description: '',
+        };
+        const results = await Promise.allSettled([
+            manager.saveOrderOnce(orderData.providerId, orderData),
+            manager.saveOrderOnce(orderData.providerId, { ...orderData, addressItems: '{"buyer":"two"}' }),
+        ]);
+        assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+        const collision = results.find(result => result.status === 'rejected').reason;
+        assert.equal(collision.name, 'SequelizeUniqueConstraintError');
+        assert.ok(collision.errors.some(error => error.path === 'providerId' || error.path === 'userPaymentOrders_providerId_unique'));
+
+        const retrySnapshot = { ...orderData, providerId: '261125100001', redirectUrl: 'https://provider.test/retry' };
+        const retryAuthorization = randomUUID();
+        let writes = 0;
+        const persist = async (data, link, orderId) => {
+            await manager.saveOrderOnce(data.providerId, data, orderId, link);
+            if (++writes === 1) throw new Error('simulated queue failure');
+        };
+        await assert.rejects(PaymentAttempt.run(1, retryAuthorization, {}, async () => retrySnapshot, persist), /queue failure/);
+        await PaymentAttempt.run(1, retryAuthorization, {}, async () => { throw new Error('created twice'); }, persist);
+        const [count] = await db.sequelize.query(
+            'SELECT COUNT(*) AS count FROM userPaymentOrders WHERE providerId = :providerId',
+            { replacements: { providerId: retrySnapshot.providerId }, type: Sequelize.QueryTypes.SELECT },
+        );
+        assert.equal(count.count, 1);
+        await assert.rejects(manager.saveOrderOnce('261125100002', {
+            ...orderData, providerId: '261125100002',
+        }, null, async () => { throw new Error('link failure'); }), /link failure/);
+        const [rolledBack] = await db.sequelize.query(
+            "SELECT COUNT(*) AS count FROM userPaymentOrders WHERE providerId = '261125100002'",
+            { type: Sequelize.QueryTypes.SELECT },
+        );
+        assert.equal(rolledBack.count, 0);
     } finally {
         await migration.down(db.sequelize.getQueryInterface());
         await db.sequelize.getQueryInterface().dropTable('userPaymentOrders');

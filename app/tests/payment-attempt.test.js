@@ -73,3 +73,21 @@ test('concurrent use rejects before reaching the payment provider', async () => 
     release();
     await first;
 });
+
+test('a replaced transfer snapshot survives failure and uses its linked order on retry', async () => {
+    const replacement = { ...snapshot, providerId: 'new-reference', redirectUrl: 'https://provider.test/new-reference' };
+    await assert.rejects(PaymentAttempt.run(1, 'collision', {}, create, async (_, link, orderId, replace) => {
+        assert.equal(orderId, null);
+        await replace(replacement);
+        await link(43);
+        throw new Error('Queue unavailable');
+    }), /Queue unavailable/);
+    const result = await PaymentAttempt.run(1, 'collision', {}, async () => {
+        throw new Error('Provider must not be called again');
+    }, async (recovered, _, orderId) => {
+        assert.equal(recovered.providerId, 'new-reference');
+        assert.equal(orderId, 43);
+        return recovered;
+    });
+    assert.equal(result, replacement.redirectUrl);
+});
