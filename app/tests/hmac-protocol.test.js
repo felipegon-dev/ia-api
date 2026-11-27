@@ -45,6 +45,12 @@ test('rotation accepts previous key only within its window', () => {
     assert.ok(verifyCart(sign(), rotated, 'shop', 'shop.example.test', now));
     assert.throws(() => verifyCart(sign(), rotated, 'shop', 'shop.example.test', now + 11));
 });
+test('authorized quantities have no commercial maximum', () => {
+    const quantity = 10001;
+    const items = [{ ...payload.items[0], quantity, lineTotalMinor: payload.items[0].priceMinor * quantity }];
+    assert.equal(verifyCart(sign({ ...payload, items }), key, 'shop', 'shop.example.test', now).items[0].quantity,
+        quantity);
+});
 test('invalid authorizations expose specific errors and reject malformed signed lines', () => {
     assert.throws(() => verifyCart(sign({ ...payload, expiresAt: now - 1 }), key, 'shop', 'shop.example.test', now),
         error => error.code === 'CART_AUTHORIZATION_EXPIRED');

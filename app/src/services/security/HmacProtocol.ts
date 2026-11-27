@@ -103,7 +103,7 @@ export function verifyCart(
         if (!item || typeof item.id !== 'string' || !item.id || item.id.length > 128 || ids.has(item.id) ||
             typeof item.title !== 'string' || !item.title || item.title.length > 500 ||
             typeof item.image !== 'string' || typeof item.url !== 'string' ||
-            !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 10000 ||
+            !Number.isSafeInteger(item.quantity) || item.quantity < 1 ||
             !Number.isSafeInteger(item.priceMinor) || item.priceMinor < 0 ||
             !Number.isSafeInteger(item.lineTotalMinor) ||
             item.lineTotalMinor !== item.priceMinor * item.quantity) {
