@@ -2,6 +2,7 @@ import db, {
     UserPaymentOrdersCreationAttributes,
     UserPaymentOrdersAttributes, UserPaymentOrderWithDomain
 } from "@config/database/models";
+import {Transaction} from "sequelize";
 
 export default class UserPaymentOrdersRepository {
     private UserPaymentOrders = db.UserPaymentOrders;
@@ -10,9 +11,10 @@ export default class UserPaymentOrdersRepository {
      * Crear una nueva orden de pago
      */
     public async create(
-        data: UserPaymentOrdersCreationAttributes
+        data: UserPaymentOrdersCreationAttributes,
+        transaction?: Transaction
     ) {
-        return this.UserPaymentOrders.create(data);
+        return this.UserPaymentOrders.create(data, { transaction });
     }
 
     /**
@@ -65,8 +67,8 @@ export default class UserPaymentOrdersRepository {
     /**
      * Obtener una orden por ID interno
      */
-    public async findById(id: number) {
-        return this.UserPaymentOrders.findByPk(id);
+    public async findById(id: number, transaction?: Transaction) {
+        return this.UserPaymentOrders.findByPk(id, { transaction });
     }
 
     /**

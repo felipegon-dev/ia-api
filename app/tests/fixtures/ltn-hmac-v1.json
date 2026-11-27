@@ -1,0 +1,41 @@
+{
+  "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "cart": {
+    "payload": "eyJ2ZXJzaW9uIjoxLCJrZXlJZCI6ImNhcnQtMSIsIm1lcmNoYW50IjoibHRuLXRlc3QiLCJkb21haW4iOiJzaG9wLnRlc3Q6ODQ0MyIsImF1dGhvcml6YXRpb25JZCI6ImZpeHR1cmVfMTIzIiwiaXNzdWVkQXQiOjE3MDAwMDAwMDAsImV4cGlyZXNBdCI6MTcwMDAwMDMwMCwiY3VycmVuY3kiOiJFVVIiLCJpdGVtcyI6W3siaWQiOiJBIiwidGl0bGUiOiJBbmNsYSDimpMiLCJwcmljZU1pbm9yIjoxMDg5LCJsaW5lVG90YWxNaW5vciI6MjE3OCwicXVhbnRpdHkiOjIsImltYWdlIjoiaHR0cHM6Ly9pbWcudGVzdC9hLndlYnAiLCJ1cmwiOiJodHRwczovL3Nob3AudGVzdDo4NDQzL2dvdG8tcC0xLmh0bWwifV19",
+    "signature": "79f7d92995d8144a6467a701a40432550b2267d053a97b83926b1cf73ccdd0e8"
+  },
+  "callback": {
+    "rawBody": "{\"eventType\":\"postPayment\",\"provider\":{\"id\":\"20261113120000ab12cd34ef\"},\"title\":\"Ancla ⚓\",\"amount\":21.78}",
+    "headers": {
+      "X-IA-Key-Id": "callback-1",
+      "X-IA-Event-Id": "d593f29006f62e7a18565fc110f80431ff5bad26afc4472cdedfd35bfa0e75f0",
+      "X-IA-Timestamp": "1700000000",
+      "X-IA-Signature": "v1=511d631c72add10da4d44fb9e6d98a7281000fc977b910f9a658071dce078823"
+    }
+  },
+  "expected": {
+    "cart": {
+      "version": 1,
+      "keyId": "cart-1",
+      "merchant": "ltn-test",
+      "domain": "shop.test:8443",
+      "authorizationId": "fixture_123",
+      "issuedAt": 1700000000,
+      "expiresAt": 1700000300,
+      "currency": "EUR",
+      "items": [
+        {
+          "id": "A",
+          "title": "Ancla ⚓",
+          "priceMinor": 1089,
+          "lineTotalMinor": 2178,
+          "quantity": 2,
+          "image": "https://img.test/a.webp",
+          "url": "https://shop.test:8443/goto-p-1.html"
+        }
+      ]
+    },
+    "eventType": "postPayment",
+    "providerId": "20261113120000ab12cd34ef"
+  }
+}

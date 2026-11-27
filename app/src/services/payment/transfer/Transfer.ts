@@ -25,6 +25,7 @@ export class Transfer implements PaymentRequestInterface {
     }
 
     getOrderId(): string {
+        if (this.orderId) return this.orderId;
         const now = new Date();
 
         const yy = String(now.getFullYear()).slice(-2);
@@ -34,6 +35,7 @@ export class Transfer implements PaymentRequestInterface {
         const mm = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
 
-        return `${yy}${MM}${dd}${hh}${mm}${ss}`;
+        this.orderId = `${yy}${MM}${dd}${hh}${mm}${ss}`;
+        return this.orderId;
     }
 }

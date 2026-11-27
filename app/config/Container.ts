@@ -27,6 +27,10 @@ import UserPaymentMethodRepository from "@config/database/repository/UserPayment
 import { UserPaymentMethodFactory } from "@src/services/payment/userPaymentMethod/UserPaymentMethodFactory";
 import { Crypt } from "@src/services/base/Crypt";
 import { AdminBasicAuthService } from "@src/api/admin/v1/security/AdminBasicAuthService";
+import UserDomainRepository from "@config/database/repository/UserDomainRepository";
+import DomainSigningKeyRepository from "@config/database/repository/DomainSigningKeyRepository";
+import { SigningKeyManager } from "@src/services/security/SigningKeyManager";
+import { createSigningKeyCrypt } from "@src/services/security/SigningKeyCrypto";
 
 type Constructor<T> = new (...args: any[]) => T;
 
@@ -52,6 +56,8 @@ export class Container {
         this.instances.set(DomainShippingRepository, new DomainShippingRepository());
         this.instances.set(DomainPreferencesRepository, new DomainPreferencesRepository());
         this.instances.set(UserPaymentMethodRepository, new UserPaymentMethodRepository());
+        this.instances.set(UserDomainRepository, new UserDomainRepository());
+        this.instances.set(DomainSigningKeyRepository, new DomainSigningKeyRepository());
     }
 
     // --------------------
@@ -63,6 +69,11 @@ export class Container {
         this.instances.set(Token, new Token(this.get(UserData)));
         this.instances.set(RedisManager, new RedisManager());
         this.instances.set(AdminBasicAuthService, new AdminBasicAuthService());
+        // HMAC_ENCRYPTION_SECRET is resolved on key generation, so legacy domains keep working without it
+        this.instances.set(
+            SigningKeyManager,
+            new SigningKeyManager(this.get(DomainSigningKeyRepository), () => createSigningKeyCrypt())
+        );
     }
 
     // --------------------

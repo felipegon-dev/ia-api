@@ -24,13 +24,13 @@ export class PaymentFactory {
     getProviderRequest(type: PaymentType): PaymentRequestInterface {
         switch (type) {
             case PaymentType.PAYPAL:
-                return this.paypalRequest;
+                return new PaypalRequest();
             case PaymentType.TRANSFER:
-                return this.transfer;
+                return new Transfer();
             case PaymentType.CARD:
-                return this.redSysRequest.setPaymentType(PaymentType.CARD);
+                return new RedSysRequest().setPaymentType(PaymentType.CARD);
             case PaymentType.BIZUM:
-                return this.redSysRequest.setPaymentType(PaymentType.BIZUM);
+                return new RedSysRequest().setPaymentType(PaymentType.BIZUM);
             default:
                 throw new Error(`Unsupported payment method: ${type}`);
         }

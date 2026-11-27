@@ -5,6 +5,14 @@ import {PaymentControllerInjection} from "@src/api/v1/injection/PaymentControlle
 import EventData, {EventType} from "@src/services/queue/EventData";
 import logger from '@src/util/logger';
 import { AppError } from '@src/errors/AppError';
+import { CartManager } from '@src/services/cart/CartManager';
+import { SigningKeys } from '@src/services/security/SigningKeys';
+import { verifyCart, moneyMinor } from '@src/services/security/HmacProtocol';
+import { PaymentAttempt, AttemptSnapshot } from '@src/services/security/PaymentAttempt';
+import { ValidationError } from '@src/errors/ValidationError';
+import UserData from '@src/services/base/UserData';
+import { PaymentType } from '@src/services/payment/Payment';
+import { Transaction, UniqueConstraintError } from 'sequelize';
 
 export class PaymentController extends BaseAuthController {
 
@@ -17,28 +25,58 @@ export class PaymentController extends BaseAuthController {
 
     postPayment = async (req: Request, res: Response) => {
         try {
-            if (!this.validateRedisConnection(res)) return;
+            if (!await this.validateRedisConnection(res)) return;
 
             this.inject.paymentControllerValidation.validateRequest(req);
 
             const user = await this.validate(req);
 
-            const cartManager = await this.inject.cartManager.get(user, req.body.cartItems);
-            const addressManager = await this.inject.addressManager.get(user, req.body.addressItems);
+            const domainId = this.inject.userDomainValidation.resolve(user, req).id;
+            const requestData = new UserData().set(req).get();
+            const signing = await new SigningKeys().find(domainId, 'cart');
+            let cartItems = req.body.cartItems;
+            let authorizationId: string | undefined;
+            if (signing?.enabled) {
+                const host = new URL(req.get('referer') ?? '').host.toLowerCase();
+                const authorization = verifyCart(req.body.cartAuthorization, signing, String(user.get('code')), host);
+                if (req.body.shippingMethods.some((method: { currency?: string } | null) =>
+                    method?.currency !== authorization.currency)) {
+                    throw new ValidationError('Shipping currency differs from the authorized cart');
+                }
+                authorizationId = authorization.authorizationId;
+                const authorized = authorization.items.map(item => ({
+                    id: item.id, title: item.title, price: item.priceMinor / 100,
+                    currency: authorization.currency, quantity: item.quantity, image: item.image, url: item.url,
+                }));
+                if (cartItems.length !== authorized.length || authorized.some((item, index) => {
+                    const sent = cartItems[index];
+                    return !sent || sent.id !== item.id || sent.quantity !== item.quantity ||
+                        sent.currency !== item.currency || moneyMinor(sent.price) !== moneyMinor(item.price);
+                })) {
+                    throw new ValidationError('Cart differs from the store authorization; refresh and review it');
+                }
+                cartItems = authorized;
+            } else if (req.body.cartAuthorization) {
+                throw new ValidationError('Cart signing is not enabled for this domain');
+            }
+            const cartManager = await new CartManager().get(user, cartItems, Boolean(authorizationId));
+            const addressItemsJson = JSON.stringify(req.body.addressItems);
             const shippingManager = await this.inject.shippingManager.get(
                 user,
-                this.inject.userDomainValidation.getDomainId(),
+                domainId,
                 req.body.shippingMethods,
                 cartManager.getAmount(),
             );
-            const paymentManager = this.inject.paymentManager.get(user, req.body.paymentCode);
+            const paymentManager = this.inject.paymentManager.get(user, req.body.paymentCode, requestData);
 
-            const totalAmount = cartManager.getAmount() + shippingManager.getAmount();
-
-            const providerRequest = this.inject.paymentFactory
-                .getProviderRequest(paymentManager.getPaymentType());
-
-            providerRequest.setParameters({
+            const totalAmount = authorizationId
+                ? (moneyMinor(cartManager.getAmount()) + moneyMinor(shippingManager.getAmount())) / 100
+                : cartManager.getAmount() + shippingManager.getAmount();
+            if (authorizationId && moneyMinor(totalAmount) > 999999999999) {
+                throw new ValidationError('Authorized payment total is outside supported limits');
+            }
+            const shippingItemsJson = shippingManager.getItemsJson();
+            const parameters = {
                 cartItems: cartManager.getCartItems(),
                 currency: cartManager.getCurrency(),
                 amount: totalAmount,
@@ -47,35 +85,69 @@ export class PaymentController extends BaseAuthController {
                 returnUrl: paymentManager.getReturnUrl(paymentManager.getPaymentType()),
                 host: paymentManager.getHost(),
                 callbackUrl: paymentManager.getCallbackUrl()
-            });
-
-            await providerRequest.createOrder();
-
-            await paymentManager.saveOrder({
-                userPaymentMethodId: paymentManager.getUserPaymentMethodId(),
-                userDomainId: this.inject.userDomainValidation.getDomainId(),
-                providerId: providerRequest.getOrderId(),
-                providerMetadata: providerRequest.getMetadata(),
-                cartItems: cartManager.getCartItemsJson(),
-                addressItems: addressManager.getItemsJson(),
-                amount: totalAmount,
-                status: UserPaymentOrderStatus.PENDING.Value,
-                shippingDetails: shippingManager.getItemsJson(),
-                description: req.body.description,
-            });
-
-            let id = await this.inject.redisManager.queueEvent(
-                new EventData(
-                    'postPayment',
-                    providerRequest.getOrderId(),
-                    EventType.postPayment
-                )
-            );
-            logger.info({ redisId: id }, 'Event sent to redis');
-
-            const baseUrlWithData = await providerRequest.getResultRedirectUrl();
-            const method = paymentManager.getPaymentType();
-            const separator = baseUrlWithData.includes('?') ? '&' : '?';
+            };
+            const create = async (idempotencyKey?: string): Promise<AttemptSnapshot> => {
+                const providerRequest = this.inject.paymentFactory.getProviderRequest(paymentManager.getPaymentType());
+                await providerRequest.setParameters({ ...parameters, idempotencyKey });
+                await providerRequest.createOrder();
+                const base = await providerRequest.getResultRedirectUrl();
+                return {
+                    providerId: providerRequest.getOrderId(),
+                    providerMetadata: providerRequest.getMetadata(),
+                    redirectUrl: `${base}${base.includes('?') ? '&' : '?'}method=${encodeURIComponent(paymentManager.getPaymentType())}`,
+                    userPaymentMethodId: paymentManager.getUserPaymentMethodId(),
+                    cartItems: cartManager.getCartItemsJson(),
+                    addressItems: addressItemsJson,
+                    amount: totalAmount,
+                    shippingDetails: shippingItemsJson,
+                    description: req.body.description ?? '',
+                };
+            };
+            const persist = async (
+                initialSnapshot: AttemptSnapshot,
+                linkOrder?: (orderId: number, transaction?: Transaction) => Promise<void>,
+                linkedOrderId?: number | null,
+                replaceSnapshot?: (snapshot: AttemptSnapshot) => Promise<void>,
+            ): Promise<AttemptSnapshot> => {
+                let snapshot = initialSnapshot;
+                for (let attempt = 0; ; attempt++) {
+                    try {
+                        await paymentManager.saveOrderOnce(snapshot.providerId, {
+                            ...snapshot, userDomainId: domainId, status: UserPaymentOrderStatus.PENDING.Value,
+                        }, linkedOrderId, linkOrder);
+                        break;
+                    } catch (error) {
+                        const collision = error instanceof UniqueConstraintError &&
+                            error.errors.some(item => item.path === 'providerId' ||
+                                item.path === 'userPaymentOrders_providerId_unique');
+                        if (!collision || paymentManager.getPaymentType() !== PaymentType.TRANSFER ||
+                            linkedOrderId != null || attempt >= 29) throw error;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        snapshot = await create();
+                        if (replaceSnapshot) await replaceSnapshot(snapshot);
+                    }
+                }
+                const id = await this.inject.redisManager.queueEvent(
+                    new EventData(
+                        'postPayment',
+                        snapshot.providerId,
+                        EventType.postPayment,
+                    ),
+                );
+                logger.info({ redisId: id }, 'Event sent to redis');
+                return snapshot;
+            };
+            const requestSnapshot = {
+                paymentCode: req.body.paymentCode, parameters, addressItems: req.body.addressItems,
+                shippingMethods: req.body.shippingMethods, description: req.body.description ?? '',
+            };
+            let data: string;
+            if (authorizationId) {
+                data = await PaymentAttempt.run(domainId, authorizationId, requestSnapshot, create, persist);
+            } else {
+                const snapshot = await persist(await create());
+                data = snapshot.redirectUrl;
+            }
 
             /**
              * data examples:
@@ -86,8 +158,6 @@ export class PaymentController extends BaseAuthController {
              * transfer: returnUrl con providerId (timestamp) para identificar el pedido y method
              *   "https://www.latiendanautica.es/ia-checkout.php?method=transfer&success=true&providerId=260507120408&method=transfer"
              */
-            const data = `${baseUrlWithData}${separator}method=${encodeURIComponent(method)}`;
-            logger.debug({ redirectUrl: data }, 'Payment redirect URL generated');
 
             res.status(200).json({
                 success: true,
@@ -107,7 +177,7 @@ export class PaymentController extends BaseAuthController {
 
     callbackPayment = async (req: Request, res: Response) => {
         try {
-            if (!this.validateRedisConnection(res)) return;
+            if (!await this.validateRedisConnection(res)) return;
 
             const callback = this.inject.paymentFactory.getProviderCallback(req.body);
             const paymentStatus = await callback.getPaymentStatus();
@@ -143,8 +213,8 @@ export class PaymentController extends BaseAuthController {
         }
     }
 
-    private validateRedisConnection(res: Response): boolean {
-        if (!this.inject.redisManager.checkConnection()) {
+    private async validateRedisConnection(res: Response): Promise<boolean> {
+        if (!await this.inject.redisManager.checkConnection()) {
             res.status(503).json({
                 success: false,
                 code: 'SERVICE_UNAVAILABLE',

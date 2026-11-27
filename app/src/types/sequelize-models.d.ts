@@ -58,6 +58,7 @@ declare module "@config/database/models" {
         userId: number;
         paymentMethodId: number;
         status: 'active' | 'inactive';
+        mode: 'development' | 'production';
         paymentToken?: string | null;
         metadata?: Record<string, any> | null;
         createdAt?: Date;
@@ -66,7 +67,7 @@ declare module "@config/database/models" {
 
     export type UserPaymentMethodCreationAttributes = Optional<
         UserPaymentMethodAttributes,
-        "id" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
+        "id" | "mode" | "paymentToken" | "metadata" | "createdAt" | "updatedAt"
     >;
 
     // ----------------- UserPaymentOrders -----------------
@@ -232,6 +233,36 @@ declare module "@config/database/models" {
     };
 
 
+    // ----------------- DomainSigningKey -----------------
+    export type SigningKeyPurpose = 'cart' | 'callback';
+
+    export type DomainSigningKeyAttributes = {
+        id: number;
+        domainId: number;
+        purpose: SigningKeyPurpose;
+        enabled: boolean;
+        keyId: string;
+        encryptedSecret: string;
+        previousKeyId?: string | null;
+        previousEncryptedSecret?: string | null;
+        previousValidUntil?: Date | null;
+        createdAt?: Date;
+        updatedAt?: Date;
+    };
+
+    export type DomainSigningKeyCreationAttributes = Optional<
+        DomainSigningKeyAttributes,
+        'id' | 'enabled' | 'previousKeyId' | 'previousEncryptedSecret' | 'previousValidUntil' | 'createdAt' | 'updatedAt'
+    >;
+
+    export const DomainSigningKey: typeof Model & {
+        new (
+            values?: Partial<DomainSigningKeyAttributes>,
+            options?: any
+        ): Model<DomainSigningKeyAttributes, DomainSigningKeyCreationAttributes>;
+    };
+
+
     // ----------------- db object -----------------
     export interface DB {
         sequelize: Sequelize;
@@ -244,9 +275,11 @@ declare module "@config/database/models" {
         PaymentMethod: typeof PaymentMethod;
         UserPaymentMethod: typeof UserPaymentMethod;
         UserPaymentOrders: typeof UserPaymentOrders;
+        DomainSigningKey: typeof DomainSigningKey;
     }
 
     export type UserPaymentOrderWithDomain = Model<UserPaymentOrdersAttributes> & {
+        userDomainId: number;
         providerMetadata: string;
         cartItems: string;
         addressItems: string;
@@ -255,6 +288,7 @@ declare module "@config/database/models" {
         description: string;
         createdAt: Date;
         userDomain?: {
+            id: number;
             domain: string;
             preferences?: {
                 callbackPaymentsUrl?: string | null;

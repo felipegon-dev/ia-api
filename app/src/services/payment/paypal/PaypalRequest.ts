@@ -100,6 +100,7 @@ export class PaypalRequest implements PaymentRequestInterface {
             `${this.getPaypalApiUrl()}${PAYPAL_ENDPOINTS.OAUTH2_TOKEN}`,
             'grant_type=client_credentials',
             {
+                timeout: 15000,
                 auth: {
                     username: this.credentials!.client_id,
                     password: this.credentials!.client_secret,
@@ -148,9 +149,12 @@ export class PaypalRequest implements PaymentRequestInterface {
                         },
                 },
                 {
+                    timeout: 15000,
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
                         'Content-Type': 'application/json',
+                        ...(this.paymentParams?.idempotencyKey
+                            ? { 'PayPal-Request-Id': this.paymentParams.idempotencyKey } : {}),
                     },
                 }
             );

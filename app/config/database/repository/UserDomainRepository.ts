@@ -36,4 +36,24 @@ export default class UserDomainRepository {
         const deleted = await this.UserDomain.destroy({ where: { id } });
         return deleted > 0;
     }
+
+    /**
+     * Dominios del usuario identificado por email (solo id y nombre)
+     */
+    public async findAllByEmail(email: string): Promise<{ id: number; domain: string }[]> {
+        const rows = await (this.UserDomain as any).findAll({
+            attributes: ['id', 'domain'],
+            include: [{ model: db.User, as: 'user', attributes: [], where: { email }, required: true }],
+            order: [['id', 'ASC']],
+        });
+        return rows.map((r: any) => ({ id: r.get('id'), domain: r.get('domain') }));
+    }
+
+    /**
+     * Dominio `domainId` solo si pertenece al usuario con ese email
+     */
+    public async findOwnedByEmail(domainId: number, email: string): Promise<{ id: number; domain: string } | null> {
+        const domains = await this.findAllByEmail(email);
+        return domains.find(d => d.id === domainId) ?? null;
+    }
 }

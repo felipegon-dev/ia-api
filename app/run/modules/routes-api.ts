@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import {v1ApiRoutes, container } from '@config/v1.api.routes';
 import { catchAsync } from './error-handler';
 import {NotFoundError} from "@src/errors/NotFoundError";
+import { ADMIN_API_PREFIX, adminIdentityMiddleware } from "@src/api/v1/security/AdminIdentity";
 
 const rateLimitedPaths = [
     '/api/v1/token',
@@ -21,6 +22,9 @@ const limiter = rateLimit({
 });
 
 export function initRoutesApi(app: Express) {
+    // Every /api/v1/admin route requires the signed identity from ia-website
+    app.use(ADMIN_API_PREFIX, adminIdentityMiddleware);
+
     v1ApiRoutes.forEach(route => {
         const {
             controller: ControllerClass,

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import UserPaymentOrdersRepository from '@config/database/repository/UserPaymentOrdersRepository';
+import UserDomainRepository from '@config/database/repository/UserDomainRepository';
 import logger from '@src/util/logger';
 
 const JSON_FIELDS = ['cartItems', 'addressItems', 'shippingDetails', 'providerMetadata', 'providerAttemptsSync'] as const;
@@ -19,7 +20,10 @@ function parseJsonFields(order: Record<string, any>): Record<string, any> {
 }
 
 export class AdminOrdersController {
-    constructor(private readonly ordersRepository: UserPaymentOrdersRepository) {}
+    constructor(
+        private readonly ordersRepository: UserPaymentOrdersRepository,
+        private readonly domainRepository: Pick<UserDomainRepository, 'findAllByEmail'>,
+    ) {}
 
     /** GET /api/v1/admin/orders?email=... */
     list = async (req: Request, res: Response) => {
@@ -32,7 +36,7 @@ export class AdminOrdersController {
         res.status(200).json({ success: true, data: orders.map(parseJsonFields) });
     };
 
-    /** GET /api/v1/admin/orders/:id */
+    /** GET /api/v1/admin/orders/:id — only orders of the authenticated admin's domains */
     get = async (req: Request, res: Response) => {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) {
@@ -40,7 +44,8 @@ export class AdminOrdersController {
             return;
         }
         const order = await this.ordersRepository.findById(id);
-        if (!order) {
+        const ownedDomainIds = (await this.domainRepository.findAllByEmail(res.locals.adminEmail)).map(d => d.id);
+        if (!order || !ownedDomainIds.includes((order as any).get('userDomainId'))) {
             res.status(404).json({ success: false, message: 'Order not found' });
             return;
         }

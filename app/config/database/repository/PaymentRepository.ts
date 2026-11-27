@@ -27,8 +27,12 @@ export default class PaymentRepository {
         return userPaymentMethod?.paymentToken ?? null;
     }
 
-    updateOrderStatus(order: string, Value: "pending" | "completed" | "failed" | "cancelled"): void {
-        db.UserPaymentOrders.update(
+    async getOrderByProviderId(providerId: string) {
+        return db.UserPaymentOrders.findOne({ where: { providerId } });
+    }
+
+    async updateOrderStatus(order: string, Value: "pending" | "completed" | "failed" | "cancelled"): Promise<void> {
+        await db.UserPaymentOrders.update(
             { status: Value },
             { where: { providerId: order } }
         );

@@ -201,6 +201,36 @@ export type UserPaymentOrdersModel = Model<
 >;
 
 /* =========================
+   DomainSigningKey
+========================= */
+
+export type SigningKeyPurpose = "cart" | "callback";
+
+export type DomainSigningKeyAttributes = {
+    id: number;
+    domainId: number;
+    purpose: SigningKeyPurpose;
+    enabled: boolean;
+    keyId: string;
+    encryptedSecret: string;
+    previousKeyId?: string | null;
+    previousEncryptedSecret?: string | null;
+    previousValidUntil?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
+export type DomainSigningKeyCreationAttributes = Optional<
+    DomainSigningKeyAttributes,
+    "id" | "enabled" | "previousKeyId" | "previousEncryptedSecret" | "previousValidUntil" | "createdAt" | "updatedAt"
+>;
+
+export type DomainSigningKeyModel = Model<
+    DomainSigningKeyAttributes,
+    DomainSigningKeyCreationAttributes
+>;
+
+/* =========================
    Sequelize Models
 ========================= */
 
@@ -211,6 +241,7 @@ export const DomainShipping: ModelStatic<DomainShippingModel>;
 export const PaymentMethod: ModelStatic<PaymentMethodModel>;
 export const UserPaymentMethod: ModelStatic<UserPaymentMethodModel>;
 export const UserPaymentOrders: ModelStatic<UserPaymentOrdersModel>;
+export const DomainSigningKey: ModelStatic<DomainSigningKeyModel>;
 
 /* =========================
    Sequelize core
@@ -234,9 +265,11 @@ export interface DB {
     PaymentMethod: ModelStatic<PaymentMethodModel>;
     UserPaymentMethod: ModelStatic<UserPaymentMethodModel>;
     UserPaymentOrders: ModelStatic<UserPaymentOrdersModel>;
+    DomainSigningKey: ModelStatic<DomainSigningKeyModel>;
 }
 
 export type UserPaymentOrderWithDomain = Model<UserPaymentOrdersAttributes> & {
+    userDomainId: number;
     providerMetadata: string;
     cartItems: string;
     addressItems: string;
@@ -245,6 +278,7 @@ export type UserPaymentOrderWithDomain = Model<UserPaymentOrdersAttributes> & {
     description: string;
     createdAt: Date;
     userDomain?: {
+        id: number;
         domain: string;
         preferences?: {
             callbackPaymentsUrl?: string | null;

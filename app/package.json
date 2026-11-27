@@ -8,7 +8,9 @@
     "build": "tsc --project tsconfig.json",
     "worker": "ts-node -r tsconfig-paths/register run/worker-redis.ts",
     "dev": "nodemon --watch src --watch run --watch config --ext ts,tsx,js,json run/www",
-    "test": "for f in tests/api/*.sh; do bash \"$f\"; done"
+    "test": "for f in tests/api/*.sh; do bash \"$f\"; done",
+    "test:unit": "node --require ts-node/register --require tsconfig-paths/register --test --test-concurrency=1 tests/*.test.js",
+    "test:integration": "node --require ts-node/register --require tsconfig-paths/register --test tests/integration/*.test.js"
   },
   "dependencies": {
     "axios": "^1.16.0",

@@ -16,7 +16,8 @@ export interface PaymentParameters {
     cancelUrl: string,
     returnUrl?: string,
     host: string,
-    callbackUrl: string
+    callbackUrl: string;
+    idempotencyKey?: string;
 }
 
 export interface CartItems {

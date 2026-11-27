@@ -5,6 +5,7 @@ import {RedSysError} from "@src/errors/RedSysError";
 import PaymentRepository from "@config/database/repository/PaymentRepository";
 import {UserPaymentOrderStatus} from "@config/database/vo/UserPaymentOrderStatus";
 import logger from '@src/util/logger';
+import { validateRedsysOrder } from '@src/services/security/ValidateRedsysOrder';
 
 export interface RedSysMerchantParams {
     Ds_Amount: string
@@ -58,6 +59,10 @@ export class RedSysCallback implements PaymentCallbackInterface {
         const secretKey = await this.getSecretKey(params.Ds_Order);
         this.validateSignature(secretKey);
 
+        const order = await this.paymentRepo.getOrderByProviderId(params.Ds_Order);
+        if (!order) throw new RedSysError('Redsys order not found');
+        validateRedsysOrder(params, order.get('amount'), order.get('providerMetadata'));
+        if (!/^\d{1,4}$/.test(params.Ds_Response)) throw new RedSysError('Invalid Redsys response code');
         const responseCode = parseInt(params.Ds_Response, 10)
 
         return {
@@ -68,11 +73,12 @@ export class RedSysCallback implements PaymentCallbackInterface {
         }
     }
     
-    public setParams(signatureVersion: string, signature: string, merchantParams: string): this {
-        this.signatureVersion = signatureVersion;
-        this.signature = signature;
-        this.merchantParams = merchantParams;
-        return this;
+    public setParams(signatureVersion: string, signature: string, merchantParams: string): RedSysCallback {
+        const callback = new RedSysCallback(this.paymentRepo);
+        callback.signatureVersion = signatureVersion;
+        callback.signature = signature;
+        callback.merchantParams = merchantParams;
+        return callback;
     }
 
     private getMerchantParams(): RedSysMerchantParams {
@@ -82,7 +88,6 @@ export class RedSysCallback implements PaymentCallbackInterface {
 
         try {
             const decoded = Buffer.from(this.merchantParams, 'base64').toString('utf8')
-            logger.debug({ merchantParams: decoded }, 'Redsys merchant params decoded');
             return JSON.parse(decoded) as RedSysMerchantParams
         } catch (error) {
             throw new RedSysError('Invalid merchant parameters')
@@ -141,10 +146,11 @@ export class RedSysCallback implements PaymentCallbackInterface {
             .replace(/\//g, '_')
             .replace(/=+$/, '')
 
-        const receivedSignature = this.signature.replace(/=+$/, '')
+        const receivedSignature = this.signature.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
         // 5️⃣ Comparación segura
-        if (calculatedSignature !== receivedSignature) {
+        if (calculatedSignature.length !== receivedSignature.length ||
+            !crypto.timingSafeEqual(Buffer.from(calculatedSignature), Buffer.from(receivedSignature))) {
             throw new RedSysError('Invalid Redsys signature')
         }
     }

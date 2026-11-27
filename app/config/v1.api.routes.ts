@@ -19,6 +19,9 @@ import UserRepository from "@config/database/repository/UserRepository";
 import { WorkerRedisAdminController } from "@src/api/admin/v1/controllers/WorkerRedisAdminController";
 import RedisManager from "@src/services/queue/RedisManager";
 import { AdminBasicAuthService } from "@src/api/admin/v1/security/AdminBasicAuthService";
+import UserDomainRepository from "@config/database/repository/UserDomainRepository";
+import { AdminSigningKeyController } from "@src/api/v1/controllers/AdminSigningKeyController";
+import { SigningKeyManager } from "@src/services/security/SigningKeyManager";
 
 export const container = new Container();
 
@@ -146,14 +149,14 @@ export const v1ApiRoutes: RouteConfig[] = [
         controller: AdminOrdersController,
         method: 'list',
         path: '/api/v1/admin/orders',
-        requires: [UserPaymentOrdersRepository],
+        requires: [UserPaymentOrdersRepository, UserDomainRepository],
         httpMethod: 'get'
     },
     {
         controller: AdminOrdersController,
         method: 'get',
         path: '/api/v1/admin/orders/:id',
-        requires: [UserPaymentOrdersRepository],
+        requires: [UserPaymentOrdersRepository, UserDomainRepository],
         httpMethod: 'get'
     },
     // ── Admin: user profile ───────────────────────────────────────────────────
@@ -170,6 +173,35 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/admin/user',
         requires: [UserRepository],
         httpMethod: 'put'
+    },
+    // ── Admin: domain HMAC signing keys ─────────────────────────────────────
+    {
+        controller: AdminSigningKeyController,
+        method: 'list',
+        path: '/api/v1/admin/signing-keys',
+        requires: [SigningKeyManager, UserDomainRepository],
+        httpMethod: 'get'
+    },
+    {
+        controller: AdminSigningKeyController,
+        method: 'generate',
+        path: '/api/v1/admin/signing-keys/:domainId/:purpose/generate',
+        requires: [SigningKeyManager, UserDomainRepository],
+        httpMethod: 'post'
+    },
+    {
+        controller: AdminSigningKeyController,
+        method: 'setEnabled',
+        path: '/api/v1/admin/signing-keys/:domainId/:purpose/enabled',
+        requires: [SigningKeyManager, UserDomainRepository],
+        httpMethod: 'put'
+    },
+    {
+        controller: AdminSigningKeyController,
+        method: 'retirePrevious',
+        path: '/api/v1/admin/signing-keys/:domainId/:purpose/retire-previous',
+        requires: [SigningKeyManager, UserDomainRepository],
+        httpMethod: 'post'
     },
     // ── Admin v1: worker events ─────────────────────────────────────────────
     {

@@ -45,8 +45,9 @@ export class ShippingManager {
             }
         }
 
-        this.shippingMethods = shippingMethods;
-        return this;
+        const manager = new ShippingManager(this.domainShippingRepository);
+        manager.shippingMethods = shippingMethods;
+        return manager;
     }
 
     getItemsJson(): string {
