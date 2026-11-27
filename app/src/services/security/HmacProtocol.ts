@@ -30,6 +30,7 @@ export interface CartAuthorization {
     issuedAt: number;
     expiresAt: number;
     currency: string;
+    addressHash?: string;
     items: AuthorizedItem[];
 }
 
@@ -43,6 +44,32 @@ export function moneyMinor(value: unknown): number {
     }
     const [whole, fraction = ''] = String(value).split('.');
     return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+}
+
+export function addressFingerprint(value: unknown): string {
+    if (!Array.isArray(value) || !value.length || value.length > 10) {
+        throw new ValidationError('Invalid checkout address');
+    }
+    const parts = ['ia-address.v1', String(value.length)];
+    for (const address of value) {
+        if (!address || typeof address !== 'object') {
+            throw new ValidationError('Invalid checkout address');
+        }
+        const fields = ['country', 'state', 'zip', 'city'] as const;
+        const location = fields.map(field => {
+            const entry = (address as Record<string, unknown>)[field];
+            if (typeof entry !== 'string') throw new ValidationError('Invalid checkout address');
+            const normalized = entry.trim();
+            return field === 'country' ? normalized.toUpperCase() : normalized;
+        });
+        const record = address as Record<string, unknown>;
+        const billing = record.billing === true ? '1' : '0';
+        const shipping = record.shipping === true ? '1' : '0';
+        for (const entry of [...location, billing, shipping]) {
+            parts.push(`${Buffer.byteLength(entry, 'utf8')}:${entry}`);
+        }
+    }
+    return createHash('sha256').update(parts.join('\n'), 'utf8').digest('hex');
 }
 
 export function callbackHeaders(
@@ -94,7 +121,8 @@ export function verifyCart(
         !safeId(data.authorizationId) || !Number.isSafeInteger(data.issuedAt) ||
         !Number.isSafeInteger(data.expiresAt) || data.issuedAt > now + 30 ||
         data.expiresAt <= now || data.expiresAt <= data.issuedAt || data.expiresAt - data.issuedAt > 600 ||
-        data.currency !== 'EUR' || !Array.isArray(data.items) || !data.items.length || data.items.length > 200) {
+        data.currency !== 'EUR' || (data.addressHash !== undefined && !/^[a-f0-9]{64}$/.test(data.addressHash)) ||
+        !Array.isArray(data.items) || !data.items.length || data.items.length > 200) {
         throw new AppError('Cart authorization scope or expiry is invalid', 400, 'CART_AUTHORIZATION_SCOPE_INVALID');
     }
     const ids = new Set<string>();

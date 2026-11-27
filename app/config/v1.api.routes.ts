@@ -21,6 +21,7 @@ import RedisManager from "@src/services/queue/RedisManager";
 import { AdminBasicAuthService } from "@src/api/admin/v1/security/AdminBasicAuthService";
 import UserDomainRepository from "@config/database/repository/UserDomainRepository";
 import { AdminSigningKeyController } from "@src/api/v1/controllers/AdminSigningKeyController";
+import { AdminDomainController } from "@src/api/v1/controllers/AdminDomainController";
 import { SigningKeyManager } from "@src/services/security/SigningKeyManager";
 
 export const container = new Container();
@@ -173,6 +174,13 @@ export const v1ApiRoutes: RouteConfig[] = [
         path: '/api/v1/admin/user',
         requires: [UserRepository],
         httpMethod: 'put'
+    },
+    {
+        controller: AdminDomainController,
+        method: 'create',
+        path: '/api/v1/admin/domains',
+        requires: [UserRepository, UserDomainRepository],
+        httpMethod: 'post'
     },
     // ── Admin: domain HMAC signing keys ─────────────────────────────────────
     {

@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHmac } = require('node:crypto');
 const { UniqueConstraintError, ValidationErrorItem } = require('sequelize');
+const { addressFingerprint } = require('../src/services/security/HmacProtocol');
 const Module = require('node:module');
 
 let signing = { enabled: true, keyId: 'key', secret: 's'.repeat(43) };
@@ -39,13 +40,17 @@ function fixture() {
             paymentCode: 'card', cartItems: [{
                 id: 'one', title: 'Untrusted browser title', price: 19.99, currency: 'EUR',
                 quantity: 1, image: '', url: '',
-            }], addressItems: [], shippingMethods: [], description: '',
+            }], addressItems: [{
+                fullName: 'Cliente', email: 'customer@example.test', country: 'ES',
+                state: 'Madrid', zip: '28001', city: 'Madrid', billing: true, shipping: true,
+            }], shippingMethods: [], description: '',
         },
     };
     const now = Math.floor(Date.now() / 1000);
     const payload = Buffer.from(JSON.stringify({
         version: 1, keyId: 'key', merchant: 'merchant', domain: 'shop.test',
         authorizationId: 'authorization', issuedAt: now, expiresAt: now + 300, currency: 'EUR',
+        addressHash: addressFingerprint(request.body.addressItems),
         items: [{
             id: 'one', title: 'Authoritative store title', priceMinor: 1999, lineTotalMinor: 1999,
             quantity: 1, image: 'https://shop.test/image', url: 'https://shop.test/product',
@@ -89,6 +94,7 @@ test('invalid, missing or altered authorization never reaches the provider', asy
         f => { f.request.body.cartAuthorization.signature = '0'.repeat(64); },
         f => { f.request.body.cartItems[0].price = 0.01; },
         f => { f.request.body.cartItems[0].quantity = 2; },
+        f => { f.request.body.addressItems[0].zip = '08001'; },
         f => { f.request.body.shippingMethods = [{ currency: 'USD' }]; },
         f => { f.request.get = () => 'https://another.test/checkout'; },
     ]) {

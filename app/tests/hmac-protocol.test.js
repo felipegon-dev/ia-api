@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { test } = require('node:test');
-const { callbackHeaders, verifyCart, moneyMinor } = require('../src/services/security/HmacProtocol');
+const { callbackHeaders, verifyCart, moneyMinor, addressFingerprint } = require('../src/services/security/HmacProtocol');
 const ltnVector = require('./fixtures/ltn-hmac-v1.json');
 const secret = 'test-secret-with-at-least-thirty-two-bytes';
 const key = { enabled: true, keyId: 'key-1', secret };
@@ -76,4 +76,19 @@ test('money conversion avoids floating comparisons and rejects fractional cents'
     assert.equal(moneyMinor('0.01'), 1);
     assert.throws(() => moneyMinor('1.001'));
     assert.throws(() => moneyMinor('-1'));
+});
+test('checkout address fingerprint is stable and covers tax location and address roles', () => {
+    const addresses = [{
+        country: ' es ', state: 'Galicia', zip: '15001', city: 'A Coruña', billing: true, shipping: true,
+    }];
+    assert.equal(addressFingerprint(addresses), '711acd03ba00c12563ae7506ef3b71d2172750627118704ba5339414a6347e96');
+    assert.equal(addressFingerprint(addresses), addressFingerprint([{
+        country: 'ES', state: 'Galicia', zip: '15001', city: 'A Coruña', billing: true, shipping: true,
+    }]));
+    assert.notEqual(addressFingerprint(addresses), addressFingerprint([{
+        ...addresses[0], zip: '08002',
+    }]));
+    assert.notEqual(addressFingerprint(addresses), addressFingerprint([{
+        ...addresses[0], shipping: false,
+    }]));
 });

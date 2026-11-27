@@ -7,7 +7,7 @@ import logger from '@src/util/logger';
 import { AppError } from '@src/errors/AppError';
 import { CartManager } from '@src/services/cart/CartManager';
 import { SigningKeys } from '@src/services/security/SigningKeys';
-import { verifyCart, moneyMinor } from '@src/services/security/HmacProtocol';
+import { verifyCart, moneyMinor, addressFingerprint } from '@src/services/security/HmacProtocol';
 import { PaymentAttempt, AttemptSnapshot } from '@src/services/security/PaymentAttempt';
 import { ValidationError } from '@src/errors/ValidationError';
 import UserData from '@src/services/base/UserData';
@@ -39,6 +39,10 @@ export class PaymentController extends BaseAuthController {
             if (signing?.enabled) {
                 const host = new URL(req.get('referer') ?? '').host.toLowerCase();
                 const authorization = verifyCart(req.body.cartAuthorization, signing, String(user.get('code')), host);
+                if (authorization.addressHash &&
+                    authorization.addressHash !== addressFingerprint(req.body.addressItems)) {
+                    throw new ValidationError('Checkout address differs from the store authorization');
+                }
                 if (req.body.shippingMethods.some((method: { currency?: string } | null) =>
                     method?.currency !== authorization.currency)) {
                     throw new ValidationError('Shipping currency differs from the authorized cart');

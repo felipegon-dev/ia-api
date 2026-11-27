@@ -2,6 +2,9 @@ import db from "@config/database/models";
 import {UserStatus} from "@config/database/vo/UserStatus";
 import {UserExtended} from "@apptypes/UserExtended";
 import { UserAttributes } from "@config/database/models";
+import { randomBytes, randomUUID } from 'crypto';
+import bcrypt from 'bcryptjs';
+import { UniqueConstraintError } from 'sequelize';
 
 export default class UserRepository {
     private User = db.User;
@@ -12,6 +15,27 @@ export default class UserRepository {
 
     findByEmail(email: string) {
         return this.User.findOne({ where: { email } });
+    }
+
+    async ensureForVerifiedEmail(email: string, name: string) {
+        const existing = await this.findByEmail(email);
+        if (existing) return existing;
+
+        try {
+            return await this.User.create({
+                name,
+                email,
+                password: await bcrypt.hash(randomBytes(32).toString('hex'), 12),
+                code: randomUUID(),
+                status: 'active',
+            });
+        } catch (error) {
+            if (!(error instanceof UniqueConstraintError)) throw error;
+
+            const createdByConcurrentRequest = await this.findByEmail(email);
+            if (!createdByConcurrentRequest) throw error;
+            return createdByConcurrentRequest;
+        }
     }
 
     findById(id: number) {
